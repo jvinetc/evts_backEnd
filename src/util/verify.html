@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Verificación de Cuenta</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+      font-family: 'Montserrat', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #fff;
+    }
+
+    .container {
+      background-color: rgba(255, 255, 255, 0.1);
+      padding: 40px;
+      border-radius: 12px;
+      text-align: center;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+      max-width: 400px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 15px;
+    }
+
+    p {
+      font-size: 1rem;
+      margin-bottom: 30px;
+    }
+
+    .btn {
+      background-color: #fff;
+      color: #2575fc;
+      padding: 12px 25px;
+      font-weight: bold;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn:hover {
+      background-color: #2575fc;
+      color: #fff;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="container">
+    <h1>✅ ¡Cuenta Verificada!</h1>
+    <p>Tu correo ha sido confirmado exitosamente. Ahora puedes iniciar sesión.</p>
+    <a href="" class="btn" id="redirect-url">Ir al Login</a>
+  </div>
+  <script>
+    fetch('/config')
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('redirect-url').href = data.redirectUrl;
+      })
+      .catch(err => console.error('Error al obtener la URL:', err));
+  </script>
+</body>
+
+</html>
