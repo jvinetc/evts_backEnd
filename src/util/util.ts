@@ -1,4 +1,4 @@
-export const formatResponse=(succes:boolean, data:object, message:string, error:boolean)=>{
+export const formatResponse=(succes:boolean, data:any, message:string, error:boolean)=>{
     return{
         succes,
         data,

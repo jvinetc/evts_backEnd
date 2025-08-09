@@ -9,6 +9,7 @@ import sellRouter from './routes/Sell';
 import stopRouter from './routes/Stop';
 import userRouter from './routes/User';
 import imageRouter from './routes/Images'
+import autoRouter from './routes/AddresApi';
 import bodyParser from 'body-parser';
 //import { genAuthUrl } from "./util/generateAuthorizationUrl";
 //import { oAuth2Callback } from "./util/generateRefreshToken";
@@ -48,6 +49,7 @@ app.use('/stop', stopRouter);
 app.use('/user', userRouter);
 app.use('/image', imageRouter);
 app.use(`/uploads`, express.static("uploads"));
+app.use('/autocomplete', autoRouter)
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.listen(port, () => {

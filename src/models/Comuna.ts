@@ -1,5 +1,6 @@
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../db/db';
+import { IComuna } from '../interface/Comuna';
 
 export const Comuna = sequelize.define('Comuna', {
   name:      { type: DataTypes.STRING, allowNull: false },

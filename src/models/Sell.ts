@@ -9,6 +9,8 @@ export const Sell = sequelize.define('Sell', {
   comunaId: { type: DataTypes.INTEGER, allowNull: false },
   state: { type: DataTypes.STRING, allowNull: false },
   userId: { type: DataTypes.INTEGER, allowNull: false },
+  lat: { type: DataTypes.DOUBLE },
+  lng: { type: DataTypes.DOUBLE },
   createAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   updateAt: { type: DataTypes.DATE }
 }, {

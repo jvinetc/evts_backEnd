@@ -7,7 +7,7 @@ export const createSellMiddleware = async (req: Request, res: Response, next: Ne
     const date = new Date();
     const Authorization = req.header("Authorization");
     const token = Authorization ? Authorization.split("Bearer ")[1] : false;
-    const { name, userId, comunaId, addres, addresPickup } = req.body;
+    const { name, userId, comunaId, addres, addresPickup, lat, lng } = req.body;
     const url = req.url;
 
     console.log(
@@ -52,7 +52,9 @@ export const createSellMiddleware = async (req: Request, res: Response, next: Ne
             comunaId,
             addres,
             addresPickup,
-            state:'activo'
+            state: 'activo',
+            lat,
+            lng
         };
 
         next();
@@ -64,10 +66,10 @@ export const createSellMiddleware = async (req: Request, res: Response, next: Ne
 };
 
 export const updateSellMiddleware = async (req: Request, res: Response, next: NextFunction) => {
-     const date = new Date();
+    const date = new Date();
     const Authorization = req.header("Authorization");
     const token = Authorization ? Authorization.split("Bearer ")[1] : false;
-    const { id, name, userId, comunaId, addres, addresPickup } = req.body;
+    const { id, name, userId, comunaId, addres, addresPickup, lat, lng } = req.body;
     const url = req.url;
 
     console.log(
@@ -113,7 +115,9 @@ export const updateSellMiddleware = async (req: Request, res: Response, next: Ne
             comunaId,
             addres,
             addresPickup,
-            updateAt:date
+            updateAt: date, 
+            lat, 
+            lng
         };
 
         next();

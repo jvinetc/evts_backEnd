@@ -6,7 +6,7 @@ const secret = process.env.JWT_SECRET || 'TemporaryKey';
 
 export const createStopMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     const date = new Date();
-    const { addresName, addres, comunaId, notes, sellId, rateId, phone } = req.body;
+    const { addresName, addres, comunaId, notes, sellId, rateId, phone, lat, lng } = req.body;
     const url = req.url;
 
     const Authorization = req.header("Authorization");
@@ -68,7 +68,9 @@ export const createStopMiddleware = async (req: Request, res: Response, next: Ne
             sellId,
             rateId,
             phone,
-            state: 'pickup'
+            state: 'pickup',
+            lat,
+            lng
         };
 
         next();
@@ -81,7 +83,7 @@ export const createStopMiddleware = async (req: Request, res: Response, next: Ne
 
 export const updateStopMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     const date = new Date();
-    const { id, addresName, addres, comunaId, notes, sellId, rateId, phone } = req.body;
+    const { id, addresName, addres, comunaId, notes, sellId, rateId, phone, lat, lng } = req.body;
     const url = req.url;
 
     const Authorization = req.header("Authorization");
@@ -143,7 +145,9 @@ export const updateStopMiddleware = async (req: Request, res: Response, next: Ne
             notes,
             sellId,
             rateId,
-            updateAt: date
+            updateAt: date,
+            lat, 
+            lng
         };
 
         next();

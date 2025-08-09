@@ -7,10 +7,12 @@ export const Stop = sequelize.define('Stop', {
     phone: { type: DataTypes.STRING, allowNull: false },
     notes: { type: DataTypes.STRING },
     sellId: { type: DataTypes.INTEGER, allowNull: false },
-    driverId: { type: DataTypes.INTEGER, allowNull:true},
+    driverId: { type: DataTypes.INTEGER, allowNull: true },
     comunaId: { type: DataTypes.INTEGER, allowNull: false },
     rateId: { type: DataTypes.INTEGER, allowNull: false },
     status: { type: DataTypes.STRING, allowNull: false, defaultValue: 'pickUp' },
+    lat: { type: DataTypes.DOUBLE },
+    lng: { type: DataTypes.DOUBLE },
     createAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
     updateAt: { type: DataTypes.DATE }
 }, {
