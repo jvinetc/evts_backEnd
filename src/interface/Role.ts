@@ -1,5 +1,5 @@
 
-export interface IRole extends Document {
+export interface IRole  {
     id?: number,
     name: string,
     description?:string,

@@ -62,7 +62,7 @@ export const login = async (req: Request, res: Response) => {
         const user = await oneByFieldWithRelations(User, { email: email }, [
             { model: Role, attributes: ['name'] },
             { model: Images, attributes: ['name'] },
-            { model: Sell, attributes: ['id', 'addresPickup'] }
+            { model: Sell, attributes: ['id', 'addresPickup', 'name'] }
         ])
         if (!user) {
             return res.status(400).json({ message: "Usuario inexistente" });
@@ -76,9 +76,7 @@ export const login = async (req: Request, res: Response) => {
                 .status(400)
                 .json({ message: "Usuario o contraseña incorrectos" });
         }
-        const token = jwt.sign({ id: user.dataValues.id, email: user.dataValues.email }, secret, {
-            expiresIn: "1h",
-        });
+        const token = jwt.sign({ id: user.dataValues.id, email: user.dataValues.email }, secret);
         const { password, ...userWithoutPass } = user.dataValues;
 
         res.json({ token, user: userWithoutPass });

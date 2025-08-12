@@ -6,7 +6,7 @@ const secret = process.env.JWT_SECRET || 'TemporaryKey';
 
 export const createStopMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     const date = new Date();
-    const { addresName, addres, comunaId, notes, sellId, rateId, phone, lat, lng } = req.body;
+    const { addresName, addres, comunaId, notes, sellId, rateId, phone, lat, lng, fragile, devolution } = req.body;
     const url = req.url;
 
     const Authorization = req.header("Authorization");
@@ -70,7 +70,9 @@ export const createStopMiddleware = async (req: Request, res: Response, next: Ne
             phone,
             state: 'pickup',
             lat,
-            lng
+            lng,
+            fragile,
+            devolution
         };
 
         next();

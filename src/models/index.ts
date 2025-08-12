@@ -7,6 +7,7 @@ import { Sell } from "./Sell";
 import { Stop } from "./Stop";
 import { User } from "./User";
 import { Images } from "./Images";
+import { Payment } from "./Payment";
 
 // User ↔ Role
 Role.hasMany(User, { foreignKey: 'roleId' });
@@ -29,6 +30,10 @@ Comuna.belongsToMany(Driver, { through: 'DriverComunas', foreignKey: 'comunaId' 
 //Images ↔ User
 User.hasMany(Images, { foreignKey: 'userId' });
 Images.belongsTo(User, { foreignKey: 'userId' });
+
+//Payment ↔ Sell
+Sell.hasMany(Payment, { foreignKey: 'sellId' });
+Payment.belongsTo(Sell, { foreignKey: 'sellId' });
 
 //Images ↔ Stop
 Stop.hasMany(Images, { foreignKey: 'stopId' });

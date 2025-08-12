@@ -10,6 +10,7 @@ import stopRouter from './routes/Stop';
 import userRouter from './routes/User';
 import imageRouter from './routes/Images'
 import autoRouter from './routes/AddresApi';
+import banckRouter from './routes/ApiTransBanck'
 import bodyParser from 'body-parser';
 //import { genAuthUrl } from "./util/generateAuthorizationUrl";
 //import { oAuth2Callback } from "./util/generateRefreshToken";
@@ -48,8 +49,9 @@ app.use('/sell', sellRouter);
 app.use('/stop', stopRouter);
 app.use('/user', userRouter);
 app.use('/image', imageRouter);
+app.use('/autocomplete', autoRouter);
+app.use('/payments', banckRouter);
 app.use(`/uploads`, express.static("uploads"));
-app.use('/autocomplete', autoRouter)
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.listen(port, () => {
