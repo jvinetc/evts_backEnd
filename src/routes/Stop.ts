@@ -1,12 +1,16 @@
 import { Router } from "express";
-import { createStopMiddleware, fromExcel, updateStopMiddleware } from "../middleware/Stop";
-import { addFromExcel, createStop, disableStop, listStopByUSer, listStops, processPay, updateStop } from "../controller/Stop";
+import { createStopMiddleware, fromExcel, toExcelBuffer, updateStopMiddleware } from "../middleware/Stop";
+import { addFromExcel, createFromExcel, createStop, disableStop, generateTemplate, listStopByUSer, listStops, processPay, updateStop } from "../controller/Stop";
+import multer from "multer";
 
+const uploadExcel = multer({ storage: multer.memoryStorage() });
 const router = Router();
 
+router.post('/uploadExcel/:sellId', uploadExcel.single('file'), toExcelBuffer, createFromExcel);
 router.post('/byExcel', fromExcel, addFromExcel);
 router.post('/pay', processPay);
 router.post('/', createStopMiddleware, createStop);
+router.get('/downloadTemplate', generateTemplate);
 router.get('/:sellId', listStopByUSer);
 router.get('/', listStops);
 router.put('/disable', disableStop);

@@ -5,7 +5,12 @@ import { model } from "mongoose";
 import { Comuna, Rate, Sell } from "../models";
 import { formatResponse } from '../util/util'
 import { IStop } from "../interface/Stop";
+import xlsx from 'xlsx';
 import axios from "axios";
+import { registerMiddleware } from "../middleware/User";
+import { IComuna } from "../interface/Comuna";
+const baseUrl = process.env.BASE_URL || '';
+
 export const createStop = async (req: Request, res: Response) => {
     const stop = await create(Stop, req.body);
     if (!stop) {
@@ -86,5 +91,100 @@ export const processPay = async (req: Request, res: Response) => {
     } catch (error) {
         res.status(500).json({ message: error });
         console.log(error)
+    }
+}
+
+interface ExcelRow {
+    direccion?: string;
+    cliente?: string;
+    comuna?: string;
+    telefono?: number;
+    referencias?: string;
+    frágil?: boolean;
+    devolución?: boolean;
+}
+
+const validateExcelData = (data: ExcelRow[]): ExcelRow[] => {
+    return data.filter(row =>
+        row.direccion?.trim() &&
+        row.cliente?.trim() &&
+        row.comuna?.trim() &&
+        typeof row.telefono === 'number'
+    );
+};
+
+export const createFromExcel = async (req: Request, res: Response) => {
+    try {
+        const buffer = req.file?.buffer;
+        const { sellId } = req.params;
+        if (!buffer) {
+            console.log('No se ha subido ningun archivo');
+            res.status(400).json({ message: 'No se ha subido ningun archivo' });
+            return;
+        }
+        const workbook = xlsx.read(buffer, { type: 'buffer' });
+        const sheetName = workbook.SheetNames[0];
+        const raw = xlsx.utils.sheet_to_json<ExcelRow>(workbook.Sheets[sheetName]);
+        const rows = validateExcelData(raw);
+        if (rows.length === 0) {
+            res.status(400).json({ message: 'El archivo no contiene datos válidos' });
+            console.log('El archivo no contiene datos válidos');
+            return;
+        }
+        const processed: IStop[] = await Promise.all(rows.map(async (row) => {
+            const { data } = await axios.post(`${baseUrl}/autocomplete/${row.direccion}, ${row.comuna}`);
+            // Assert the type of 'data' to access its properties
+            const suggestions = (data as { data: { suggestions: any[] } }).data.suggestions;
+            const placeId = suggestions[0].placePrediction.placeId;
+
+            const { data: detail } = await axios.get(`${baseUrl}/autocomplete/detail/${placeId}`);
+            const { streetName, streetNumber, comuna, lat, lng } = (detail as { data: { streetName: string; streetNumber: string; comuna: string; lat: number; lng: number } }).data;
+
+            const notes = typeof row.referencias === 'string' ? row.referencias.replace(/[()]/g, '') : '';
+            const phone = !row.telefono ? '' : row.telefono.toString();
+            const addres = `${streetName} ${streetNumber}`;
+            const comunaRecord = await byField<IComuna>(Comuna, { name: comuna });
+            const comunaId = comunaRecord ? comunaRecord.id : undefined;
+            return {
+                addresName: row.cliente ? row.cliente : 'Sin nombre',
+                addres: addres,
+                comunaId: comunaId,
+                notes: notes,
+                phone: phone,
+                lat: lat,
+                lng: lng,
+                fragile: row.frágil || false,
+                devolution: row.devolución || false,
+                sellId: Number(sellId) || undefined,
+                rateId:1
+            }
+        }
+        ));
+        console.log(processed)
+        await Stop.bulkCreate(processed as any[]);
+        res.status(201).json({ message: 'Paradas creadas exitosamente' });
+
+    } catch (error) {
+        res.status(500).json({ message: error });
+        console.log(error);
+    }
+}
+
+export const generateTemplate = async (req: Request, res: Response) => {
+    try {
+        const headers = ['direccion', 'cliente', 'comuna', 'telefono', 'referencias', 'frágil', 'devolución'];
+        const defaultRows = ['', '', '', '', '', false, false];
+        const worksheet = xlsx.utils.aoa_to_sheet([headers, defaultRows]);
+        const workbook = xlsx.utils.book_new();
+        xlsx.utils.book_append_sheet(workbook, worksheet, 'Template');
+
+        const buffer = xlsx.write(workbook, { bookType: 'xlsx', type: 'buffer' });
+
+        res.setHeader('Content-Disposition', 'attachment; filename=Plantilla_Stops.xlsx');
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.send(buffer);
+    } catch (error) {
+        res.status(500).json({ message: error });
+        console.log(error);
     }
 }

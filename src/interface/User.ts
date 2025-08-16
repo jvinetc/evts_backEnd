@@ -1,5 +1,5 @@
 
-export interface IUser  {
+export interface IUser {
     id?: number,
     firstName: string,
     lastName: string,
@@ -13,6 +13,7 @@ export interface IUser  {
     roleId: number,
     photo?: string,
     verification_token?: string,
+    birthDate?: Date;
     createAt: Date;
     updateAt?: Date;
 }

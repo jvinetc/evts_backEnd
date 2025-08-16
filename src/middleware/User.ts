@@ -6,7 +6,7 @@ const emailFormat = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i;
 
 export const registerMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     const date = now();
-    const { firstName, lastName, email, age, password, phone, username } = req.body;
+    const { firstName, lastName, email, age, password, phone, username, birthDate } = req.body;
     const url = req.url;
     let passCrypt;
     let state;
@@ -37,27 +37,35 @@ export const registerMiddleware = async (req: Request, res: Response, next: Next
             typeof username !== "string" ||
             !username.trim()
         ) {
-            return res
+            console.log('datos incompletos');
+            res
                 .status(400)
                 .json({
                     message: "Los campos deben estar completos y ser texto válido",
                 });
+            return;
         }
 
         if (isNaN(Number(age))) {
-            return res.status(400).json({ message: "La edad debe ser numérica" });
+            console.log('la edad no es numero');
+            res.status(400).json({ message: "La edad debe ser numérica" });
+            return;
         }
 
         if (Number(age) < 18) {
-            return res
+            console.log('menor de edad');
+            res
                 .status(400)
                 .json({ message: "Para ingresar debe ser mayor de edad" });
+            return;
         }
 
         if (!emailFormat.test(email)) {
-            return res
+            console.log('mal fromato de correo');
+            res
                 .status(400)
                 .json({ message: "El correo no posee un formato correcto" });
+            return;
         }
 
         passCrypt = bcrypt.hashSync(password, 10);
@@ -72,6 +80,7 @@ export const registerMiddleware = async (req: Request, res: Response, next: Next
             password: passCrypt,
             phone,
             state,
+            birthDate,
             registration_date: date,
         };
 

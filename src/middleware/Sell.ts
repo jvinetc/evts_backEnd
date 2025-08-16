@@ -7,7 +7,7 @@ export const createSellMiddleware = async (req: Request, res: Response, next: Ne
     const date = new Date();
     const Authorization = req.header("Authorization");
     const token = Authorization ? Authorization.split("Bearer ")[1] : false;
-    const { name, userId, comunaId, addres, addresPickup, lat, lng } = req.body;
+    const { name, userId, comunaId, addres, addresPickup, lat, lng, email } = req.body;
     const url = req.url;
 
     console.log(
@@ -54,7 +54,8 @@ export const createSellMiddleware = async (req: Request, res: Response, next: Ne
             addresPickup,
             state: 'activo',
             lat,
-            lng
+            lng, 
+            email
         };
 
         next();

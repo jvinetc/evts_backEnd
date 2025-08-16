@@ -12,8 +12,15 @@ var storage = multer.diskStorage({
         cb(null, file.fieldname + '-' + Date.now())
     }
 })
-var upload = multer({ storage: storage })
+var upload = multer({ storage, 
+    fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Solo se permiten imágenes'));
+    }
+  },})
 //router.get('/user', listComunas);
-router.post('/user/:id',upload.single('file'), createImageUser);
+router.post('/user/:id', upload.single('file'), createImageUser);
 
 export default router;

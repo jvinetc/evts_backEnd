@@ -12,8 +12,8 @@ import imageRouter from './routes/Images'
 import autoRouter from './routes/AddresApi';
 import banckRouter from './routes/ApiTransBanck'
 import bodyParser from 'body-parser';
-//import { genAuthUrl } from "./util/generateAuthorizationUrl";
-//import { oAuth2Callback } from "./util/generateRefreshToken";
+import { genAuthUrl } from "./util/generateAuthorizationUrl";
+import { oAuth2Callback } from "./util/generateRefreshToken";
 import { sequelize } from './models';
 
 sequelize.sync({ alter: true })
@@ -39,8 +39,8 @@ app.get('/', async (req: Request, res: Response) => {
 app.get('/config', (req, res) => {
   res.json({ redirectUrl: process.env.POST_VERIFY });
 });
-/* app.get('/genAuthUrl', genAuthUrl);
-app.get('/oauth2callback', oAuth2Callback); */
+app.get('/genAuthUrl', genAuthUrl);
+app.get('/oauth2callback', oAuth2Callback);
 app.use('/comuna', comunaRouter);
 app.use('/driver', driverRouter);
 app.use('/rate', rateRouter);

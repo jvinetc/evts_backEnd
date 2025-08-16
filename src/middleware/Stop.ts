@@ -148,7 +148,7 @@ export const updateStopMiddleware = async (req: Request, res: Response, next: Ne
             sellId,
             rateId,
             updateAt: date,
-            lat, 
+            lat,
             lng
         };
 
@@ -196,6 +196,50 @@ export const fromExcel = async (req: Request, res: Response, next: NextFunction)
                     message: "No viene contenido en tu archivo",
                 });
         }
+        next();
+    } catch (error) {
+        return res
+            .status(500)
+            .json({ origin: "middleware", message: error });
+    }
+
+}
+
+export const toExcelBuffer = async (req: Request, res: Response, next: NextFunction) => {
+    const date = new Date();
+    const url = req.url;
+
+
+    const Authorization = req.header("Authorization");
+    const token = Authorization ? Authorization.split("Bearer ")[1] : false;
+
+    console.log(
+        `Fecha de la consulta: ${date}; URL consultada: ${url}; Datos recibidas: `,
+        req.body
+    );
+
+    try {
+        if (!token) {
+            res
+                .status(400)
+                .json({
+                    message: "Usuario no autorizado",
+                });
+            console.log("No token provided");
+            return;
+        }
+
+        if (!jwt.verify(token, secret)) {
+            res
+                .status(400)
+                .json({
+                    message: "El token enviado no corresponde a esta sesion",
+                });
+            console.log("Invalid token");
+            return;
+        }
+
+
         next();
     } catch (error) {
         return res

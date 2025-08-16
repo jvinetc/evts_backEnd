@@ -15,7 +15,7 @@ const commerceCode = process.env.COMMERCE_CODE || ''
 const redirectUrl = process.env.POST_VERIFY || '';
 
 export const createTransaction = async (req: Request, res: Response) => {
-    const { amount, buyOrder, sessionId } = req.body;
+    const { amount, buyOrder, sessionId, returnUrl } = req.body;
     const baseUrl = process.env.BASE_URL;
     if (isNaN(Number(amount))) {
         return res.status(400).json({ error: 'El monto debe ser un número válido' });
@@ -23,7 +23,7 @@ export const createTransaction = async (req: Request, res: Response) => {
     try {
         const options = new Options(commerceCode, apiKey, Environment.Integration);
         const transaction = new WebpayPlus.Transaction(options);
-        const returnUrl = `${baseUrl}/payments/verify`;
+        //const returnUrl = `${baseUrl}/payments/verify`;
         const response = await transaction.create(
             buyOrder,
             sessionId,
@@ -66,12 +66,14 @@ export const verifyPay = async (req: Request<{}, {}, {}, WebpayQuery>, res: Resp
             sellId: Number(sellId)
         }
         if (body.status !== 'AUTHORIZED') {
-            return res.redirect(`${redirectUrl}/valida_pago?error="El pago no pudo ser procesado"`)
+            //return res.redirect(`${redirectUrl}/valida_pago?error="El pago no pudo ser procesado"`)
+            return res.status(400).json({menssage:'No fue autorizado el pago'})
         }
         await update(Stop, { buyOrder: body.buy_order }, { status: 'pickUp' });
         const payment = await create<VerifyResponse>(Payment, body);
         if (payment)
-            res.redirect(`${redirectUrl}/valida_pago?authorization_code=${body.authorization_code}`)
+            //res.redirect(`${redirectUrl}/valida_pago?authorization_code=${body.authorization_code}`)
+        res.status(200).json({authorization_code: body.authorization_code});
 
     } catch (error) {
         res.status(500).json({ error });

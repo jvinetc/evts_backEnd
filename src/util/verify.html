@@ -65,16 +65,8 @@
   <div class="container">
     <h1>✅ ¡Cuenta Verificada!</h1>
     <p>Tu correo ha sido confirmado exitosamente. Ahora puedes iniciar sesión.</p>
-    <a href="" class="btn" id="redirect-url">Ir al Login</a>
+    <p>En nustras plataformas, web o app movil.</p>
   </div>
-  <script>
-    fetch('/config')
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById('redirect-url').href = data.redirectUrl;
-      })
-      .catch(err => console.error('Error al obtener la URL:', err));
-  </script>
 </body>
 
 </html>

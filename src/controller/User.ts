@@ -62,7 +62,7 @@ export const login = async (req: Request, res: Response) => {
         const user = await oneByFieldWithRelations(User, { email: email }, [
             { model: Role, attributes: ['name'] },
             { model: Images, attributes: ['name'] },
-            { model: Sell, attributes: ['id', 'addresPickup', 'name'] }
+            { model: Sell, attributes: ['id', 'addresPickup', 'name', 'email', 'addres'] }
         ])
         if (!user) {
             return res.status(400).json({ message: "Usuario inexistente" });
