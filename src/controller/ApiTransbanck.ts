@@ -53,7 +53,7 @@ export const verifyPay = async (req: Request<{}, {}, {}, WebpayQuery>, res: Resp
         const options = new Options(commerceCode, apiKey, Environment.Integration);
         const transaction = new WebpayPlus.Transaction(options);
         const response = await transaction.commit(token_ws);
-        const [text, date, sellId, token] = response.session_id.split('-');
+        const [text, date, sellId] = response.session_id.split('-');
         const body: VerifyResponse = {
             vci: response.vci,
             amount: response.amount,

@@ -23,6 +23,7 @@ export const registerUser = async (req: Request<{}, {}, IUser, {}>, res: Respons
         await sendVerificationEmail(user.email, token);
         res.status(201).json({ message: `Usuario registrado con exito, se envio un emial de verificacion a ${user.email}.` });
     } catch (err) {
+        console.log(err);
         res.status(500).json({ message: err });
     }
 }

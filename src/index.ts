@@ -41,6 +41,21 @@ app.get('/config', (req, res) => {
 });
 app.get('/genAuthUrl', genAuthUrl);
 app.get('/oauth2callback', oAuth2Callback);
+app.get('/webpay-return', (req, res) => {
+  const token_ws = req.query.token_ws;
+  const redirectUrl = `appenvios://webpay-return?token_ws=${token_ws}`;
+  res.send(`
+    <html>
+      <head><title>Redirigiendo...</title></head>
+      <body>
+        <script>
+          window.location.href = "${redirectUrl}";
+        </script>
+        <p>Redirigiendo a la app...</p>
+      </body>
+    </html>
+  `);;
+});
 app.use('/comuna', comunaRouter);
 app.use('/driver', driverRouter);
 app.use('/rate', rateRouter);

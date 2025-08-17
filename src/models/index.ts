@@ -54,4 +54,4 @@ Stop.belongsTo(Rate, { foreignKey: 'rateId' });
 
 // 👇 Puedes agregar la tabla Rate luego si la migras
 
-export { sequelize, User, Role, Comuna, Sell, Driver, Stop, Rate, Images };
+export { sequelize, User, Role, Comuna, Sell, Driver, Stop, Rate, Images, Payment };

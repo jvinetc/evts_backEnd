@@ -2,13 +2,14 @@ import { Request, Response } from "express";
 import { Stop } from "../models/Stop";
 import { create, update, list, byField, byFieldWithRelations, remove, listWithRelations } from "./crudController";
 import { model } from "mongoose";
-import { Comuna, Rate, Sell } from "../models";
+import { Comuna, Rate, Sell, Payment } from "../models";
 import { formatResponse } from '../util/util'
 import { IStop } from "../interface/Stop";
 import xlsx from 'xlsx';
 import axios from "axios";
 import { registerMiddleware } from "../middleware/User";
 import { IComuna } from "../interface/Comuna";
+import { where } from "sequelize";
 const baseUrl = process.env.BASE_URL || '';
 
 export const createStop = async (req: Request, res: Response) => {
@@ -76,7 +77,7 @@ export const addFromExcel = async (req: Request, res: Response) => {
 }
 
 export const processPay = async (req: Request, res: Response) => {
-    const { selectedStops, amount, sessionId } = req.body;
+    const { selectedStops, amount, sessionId, returnUrl } = req.body;
     const baseUrl = process.env.BASE_URL;
     try {
         const buyOrder = `BO-${Date.now()}`;
@@ -85,7 +86,7 @@ export const processPay = async (req: Request, res: Response) => {
                 await update(Stop, { id: stop.id }, { buyOrder: buyOrder })
                     .catch(error => console.log(error));
             }));
-        const { data } = await axios.post(`${baseUrl}/payments`, { amount, sessionId, buyOrder });
+        const { data } = await axios.post(`${baseUrl}/payments`, { amount, sessionId, buyOrder, returnUrl });
         res.status(200).json(data);
 
     } catch (error) {
@@ -131,7 +132,7 @@ export const createFromExcel = async (req: Request, res: Response) => {
             console.log('El archivo no contiene datos válidos');
             return;
         }
-        const processed: IStop[] = await Promise.all(rows.map(async (row) => {
+        const processed: IStop[] = await Promise.all(raw.map(async (row) => {
             const { data } = await axios.post(`${baseUrl}/autocomplete/${row.direccion}, ${row.comuna}`);
             // Assert the type of 'data' to access its properties
             const suggestions = (data as { data: { suggestions: any[] } }).data.suggestions;
@@ -156,7 +157,7 @@ export const createFromExcel = async (req: Request, res: Response) => {
                 fragile: row.frágil || false,
                 devolution: row.devolución || false,
                 sellId: Number(sellId) || undefined,
-                rateId:1
+                rateId: 1
             }
         }
         ));
@@ -187,4 +188,31 @@ export const generateTemplate = async (req: Request, res: Response) => {
         res.status(500).json({ message: error });
         console.log(error);
     }
+}
+
+export const getPaysBySell = async (req: Request, res: Response) => {
+    const { sellId } = req.params;
+    try {
+        const payments = await list(Payment, {where: {sellId} });
+        res.status(200).json(payments);
+    } catch (error) {
+        res.status(500).json({ message: error });
+        console.log(error);
+    }
+}
+
+export const getPayDetail = async (req: Request, res: Response) => {
+    const { buyOrder } = req.params;
+    try {
+        const stops = await byFieldWithRelations(Stop, { buyOrder }, [
+        { model: Comuna, attributes: ['name', 'id'] },
+        { model: Rate, attributes: ['id', 'nameService', 'price'] },
+        { model: Sell, attributes: ['id', 'name', 'email', 'addresPickup'] }
+    ]);
+        res.status(200).json(stops);
+    } catch (error) {
+        res.status(500).json({ message: error });
+        console.log(error);
+    }
+
 }

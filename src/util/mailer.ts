@@ -28,7 +28,7 @@ export const sendVerificationEmail = async (email: string, localToken: string) =
                 accessToken: token
             }
         });
-        const url = process.env.BASE_URL;
+        const url = process.env.BASE_URL_MOBIL;
         const verificationLink = `${url}/user/verify/${localToken}`;
         const info = await transporter.sendMail({
             from: `Envios Todo Santiago <${process.env.EMAIL_FROM}>`,
