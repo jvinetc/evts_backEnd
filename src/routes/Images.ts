@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { createImageUser } from "../controller/Images";
 import multer from "multer";
+import { authConfirm } from "../middleware/Auth";
 
 const router = Router();
 
@@ -21,6 +22,6 @@ var upload = multer({ storage,
     }
   },})
 //router.get('/user', listComunas);
-router.post('/user/:id', upload.single('file'), createImageUser);
+router.post('/user/:id', upload.single('file'), authConfirm, createImageUser);
 
 export default router;
