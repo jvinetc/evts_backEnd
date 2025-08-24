@@ -9,7 +9,8 @@ import xlsx from 'xlsx';
 import axios from "axios";
 import { registerMiddleware } from "../middleware/User";
 import { IComuna } from "../interface/Comuna";
-import { where } from "sequelize";
+import { Sequelize, where } from "sequelize";
+import dayjs from "dayjs";
 const baseUrl = process.env.BASE_URL || '';
 
 export const createStop = async (req: Request, res: Response) => {
@@ -50,6 +51,51 @@ export const listStops = async (req: Request, res: Response) => {
         return;
     }
     res.status(201).json(formatResponse(true, stops, 'Listado de paradas para administrador', false));
+}
+
+type ResponseChart={
+    label:string;
+    value:number;
+}
+export const listStopsCharts = async (req: Request, res: Response) => {
+    const stops = await list(Stop, {
+        attributes: [
+            [Sequelize.literal(`"createAt"::date`), 'label'],
+            [Sequelize.fn('COUNT', Sequelize.col('id')), 'value'] // Conteo de IDs
+        ],
+        group:[Sequelize.literal(`"createAt"::date`)],
+        raw: true // Devuelve resultados como objetos planos
+    });
+    if (!stops) {
+        res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
+        return;
+    }
+    const datosLimpios = stops.map(({ label, value }) => ({
+        label: dayjs(label).format('DD-MM-YYYY'), // o 'YYYY-MM-DD', según lo que necesites
+        value
+    }));
+    res.status(200).json(datosLimpios);
+}
+
+export const listStopsComunas = async (req: Request, res: Response) => {
+    const stops = await listWithRelations(Stop, {
+        attributes: [
+            'comunaId',
+            [Sequelize.fn('COUNT', Sequelize.col('Stop.id')), 'value'] // Conteo de IDs
+        ],
+        group: ['comunaId', 'Comuna.name'],
+        raw: true // Devuelve resultados como objetos planos
+    },
+        [{ model: Comuna, attributes: [['name', 'label']] }]);
+    if (!stops) {
+        res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
+        return;
+    }
+    const datosLimpios = stops.map(({ ['Comuna.label']: label, ...rest }) => ({
+        ...rest,
+        label
+    }));
+    res.status(200).json(datosLimpios);
 }
 
 export const listStopByUSer = async (req: Request, res: Response) => {
@@ -193,7 +239,7 @@ export const generateTemplate = async (req: Request, res: Response) => {
 export const getPaysBySell = async (req: Request, res: Response) => {
     const { sellId } = req.params;
     try {
-        const payments = await list(Payment, {where: {sellId} });
+        const payments = await list(Payment, { where: { sellId } });
         res.status(200).json(payments);
     } catch (error) {
         res.status(500).json({ message: error });
@@ -205,10 +251,10 @@ export const getPayDetail = async (req: Request, res: Response) => {
     const { buyOrder } = req.params;
     try {
         const stops = await byFieldWithRelations(Stop, { buyOrder }, [
-        { model: Comuna, attributes: ['name', 'id'] },
-        { model: Rate, attributes: ['id', 'nameService', 'price'] },
-        { model: Sell, attributes: ['id', 'name', 'email', 'addresPickup'] }
-    ]);
+            { model: Comuna, attributes: ['name', 'id'] },
+            { model: Rate, attributes: ['id', 'nameService', 'price'] },
+            { model: Sell, attributes: ['id', 'name', 'email', 'addresPickup'] }
+        ]);
         res.status(200).json(stops);
     } catch (error) {
         res.status(500).json({ message: error });

@@ -8,7 +8,9 @@ export const createDriverMiddleware = async (req: Request, res: Response, next: 
     const date = new Date();
     const Authorization = req.header("Authorization");
     const token = Authorization ? Authorization.split("Bearer ")[1] : false;
-    const { userId, patente, docs, comunas } = req.body;
+    const user = JSON.parse(req.body.user);
+    const driver = JSON.parse(req.body.driver);
+    const files = req.files;
     const url = req.url;
 
     console.log(
@@ -32,52 +34,13 @@ export const createDriverMiddleware = async (req: Request, res: Response, next: 
                 });
         }
 
-        if (
-            !patente ||
-            typeof patente !== "string" ||
-            !patente.trim()
-        ) {
+        if (!user || !driver || !files) {
             return res
                 .status(400)
                 .json({
-                    message: "La patente es obligatoria",
+                    message: "Todos los campos son obligatorios",
                 });
         }
-
-        if (docs.length > 2) {
-            return res
-                .status(400)
-                .json({
-                    message: "Todos los documentos son requeridos",
-                });
-        }
-
-        if (!comunas.length) {
-            return res
-                .status(400)
-                .json({
-                    message: "Debe asignar una comuna como minimo",
-                });
-        }
-
-        if (!pathPatente.test(patente.toUpperCase())) {
-            return res
-                .status(400)
-                .json({
-                    message: "El formato de la patente no es el correcto",
-                });
-        }
-
-        req.body = {
-            userId,
-            patente,
-            permisoCirculacion: docs[0],
-            revicionTecnica: docs[1],
-            liceciaConducir: docs[2],
-            comunas: [comunas],
-            status: 'ativo'
-        };
-
         next();
     } catch (error) {
         return res
@@ -88,7 +51,8 @@ export const createDriverMiddleware = async (req: Request, res: Response, next: 
 
 export const updateDriverMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     const date = new Date();
-    const { id, userId, patente, docs, comunas } = req.body;
+
+    //const { id, userId, patente, docs, comunas } = req.body;
     const url = req.url;
     const Authorization = req.header("Authorization");
     const token = Authorization ? Authorization.split("Bearer ")[1] : false;
@@ -114,7 +78,8 @@ export const updateDriverMiddleware = async (req: Request, res: Response, next: 
                     message: "El token enviado no corresponde a esta sesion",
                 });
         }
-        if (
+        next();
+       /*  if (
             !patente ||
             typeof patente !== "string" ||
             !patente.trim()
@@ -161,7 +126,7 @@ export const updateDriverMiddleware = async (req: Request, res: Response, next: 
             updateAt: date
         };
 
-        next();
+        next(); */
     } catch (error) {
         return res
             .status(500)

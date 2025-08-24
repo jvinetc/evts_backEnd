@@ -1,4 +1,4 @@
-import { Model, ModelCtor, WhereOptions, ModelStatic } from 'sequelize';
+import { Model, ModelStatic } from 'sequelize';
 
 export const create = async <T>(
   model: ModelStatic<Model>,
@@ -56,8 +56,8 @@ export const byField = async <T>(
 
 export const listWithRelations = async <T>(
   model: { findAll: (options?: any) => Promise<T[]> },
-  relations: any[] = [],
-  config: any = {}
+  config: any,
+  relations: any[] = []  
 ): Promise<T[]> => {
   try {
     return await model.findAll({
