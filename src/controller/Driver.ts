@@ -5,11 +5,12 @@ import { IDriver } from "../interface/Driver";
 import { Op, WhereOptions } from "sequelize";
 import { IUser } from "../interface/User";
 import * as fs from 'fs';
+import { cloudinary } from "../util/cloudinary";
 
 export const createDriver = async (req: Request, res: Response) => {
     const user: IUser = JSON.parse(req.body.user);
     const driver: IDriver = JSON.parse(req.body.driver);
-    const files = req.files;
+    const files = req.files as Express.Multer.File[];
     const { expiration1, expiration2, expiration3 } = req.body;
     user.roleId = 3;
     user.username = `${user.firstName}${user.lastName}`;
@@ -22,8 +23,11 @@ export const createDriver = async (req: Request, res: Response) => {
     }
     driver.userId = userR.dataValues.id;
     driver.liceciaConducir = files[0].filename;
+    driver.urlLiceciaConducir=files[0].path;
     driver.permisoCirculacion = files[1].filename;
+    driver.urlPermisoCirculacion= files[1].path;
     driver.revicionTecnica = files[2].filename;
+    driver.urlRevicionTecnica= files[2].path;
     driver.vencimientoLiceciaConducir = expiration1;
     driver.vencimientoPermisoCirculacion = expiration2;
     driver.vencimientoRevicionTecnica = expiration3;
@@ -59,31 +63,25 @@ export const updateDriver = async (req: Request, res: Response) => {
         }
         // Licencia de conducir
         if (files.file1 && expiration1) {
-            fs.unlink(`./uploads/${driv.liceciaConducir}`, (error) => {
-                if (error) console.log("Error al eliminar licencia:", error);
-                else console.log("Licencia eliminada:", driv.liceciaConducir);
-            });
+            cloudinary.uploader.destroy(driv.liceciaConducir);
             driv.liceciaConducir = files.file1[0].filename;
+            driv.urlLiceciaConducir= files.file1[0].path;
             driv.vencimientoLiceciaConducir = expiration1;
         }
 
         // Permiso de circulación
         if (files.file2 && expiration2) {
-            fs.unlink(`./uploads/${driv.permisoCirculacion}`, (error) => {
-                if (error) console.log("Error al eliminar permiso:", error);
-                else console.log("Permiso eliminado:", driv.permisoCirculacion);
-            });
+           cloudinary.uploader.destroy(driv.permisoCirculacion);
             driv.permisoCirculacion = files.file2[0].filename;
+            driv.urlPermisoCirculacion = files.file2[0].path;
             driv.vencimientoPermisoCirculacion = expiration2;
         }
 
         // Revisión técnica
         if (files.file3 && expiration3) {
-            fs.unlink(`./uploads/${driv.revicionTecnica}`, (error) => {
-                if (error) console.log("Error al eliminar revisión:", error);
-                else console.log("Revisión eliminada:", driv.revicionTecnica);
-            });
+            cloudinary.uploader.destroy(driv.revicionTecnica);
             driv.revicionTecnica = files.file3[0].filename;
+            driv.urlRevicionTecnica = files.file3[0].path;
             driv.vencimientoRevicionTecnica = expiration3;
         }
 

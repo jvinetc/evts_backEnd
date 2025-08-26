@@ -11,6 +11,9 @@ export interface IDriver {
     liceciaConducir: string,
     vencimientoLiceciaConducir: Date,
     status: string,
+    urlPermisoCirculacion?: string;
+    urlRevicionTecnica?: string;
+    urlLiceciaConducir?: string;
     createAt: Date,
     updateAt?: Date,
     Comunas?: IComuna[];

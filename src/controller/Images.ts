@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { create, update, list, byField, byFieldWithRelations } from "./crudController";
 import { Images } from "../models";
 import * as fs from 'fs';
+import { cloudinary } from "../util/cloudinary";
 
 export const createImageUser = async (req: Request, res: Response) => {
     const file = req.file as Express.Multer.File;
@@ -15,17 +16,19 @@ export const createImageUser = async (req: Request, res: Response) => {
         const userImage = await byField(Images, { userId: user_id });
         if (userImage) {
             const fileName = userImage.dataValues.name;
-            fs.unlink(`./uploads/${fileName}`, error => {
+            cloudinary.uploader.destroy(fileName);
+            /* fs.unlink(`./uploads/${fileName}`, error => {
                 if (error) {
                     console.log("Archivo no borrado por: ", error)
                 } else {
                     console.log("archivo eliminado de: ", fileName);
                 }
-            });
+            }); */
             await Images.destroy({ where: { userId: user_id } });
         }
         const data = {
             name: file.filename,
+            url: file.path,
             userId: user_id
         }
         const image = await create(Images, data);

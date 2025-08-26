@@ -2,10 +2,13 @@ import { Router } from "express";
 import { createImageUser } from "../controller/Images";
 import multer from "multer";
 import { authConfirm } from "../middleware/Auth";
+import { storage } from '../util/cloudinary';
+
+export const upload = multer({ storage });
 
 const router = Router();
 
-var storage = multer.diskStorage({
+/* var storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, 'uploads')
     },
@@ -20,7 +23,7 @@ var upload = multer({ storage,
     } else {
       cb(new Error('Solo se permiten imágenes'));
     }
-  },})
+  },}) */
 //router.get('/user', listComunas);
 router.post('/user/:id', upload.single('file'), authConfirm, createImageUser);
 

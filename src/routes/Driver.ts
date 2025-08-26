@@ -4,11 +4,14 @@ import { createDriver, disableDriver, getDriverById, getDrivers, updateDriver } 
 import { authConfirm } from "../middleware/Auth";
 import multer from "multer";
 import path from 'path';
+import { storage } from '../util/cloudinary';
+
+export const upload = multer({ storage });
 
 const router = Router();
 
 // Configuración del almacenamiento
-const storage = multer.diskStorage({
+/* const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, 'uploads'); // carpeta donde se guardan los archivos
   },
@@ -35,7 +38,7 @@ export const upload = multer({
   limits: {
     fileSize: 5 * 1024 * 1024 // opcional: máximo 5MB por archivo
   }
-});
+}); */
 router.post('/', upload.array('file'), createDriverMiddleware, createDriver);
 router.get('/:id', getDriverById);
 router.get('/'/* , authConfirm */, getDrivers);

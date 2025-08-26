@@ -62,7 +62,7 @@ export const login = async (req: Request, res: Response) => {
     try {
         const user = await oneByFieldWithRelations(User, { email: email }, [
             { model: Role, attributes: ['name'] },
-            { model: Images, attributes: ['name'] },
+            { model: Images, attributes: ['name', 'url'] },
             { model: Sell, attributes: ['id', 'addresPickup', 'name', 'email', 'addres'] }
         ])
         if (!user) {
