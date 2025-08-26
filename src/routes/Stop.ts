@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { createStopMiddleware, fromExcel, toExcelBuffer, updateStopMiddleware } from "../middleware/Stop";
-import { addFromExcel, createFromExcel, createStop, disableStop, generateTemplate, getPayDetail, getPaysBySell, listStopByUSer, listStops, listStopsCharts, listStopsComunas, processPay, updateStop } from "../controller/Stop";
+import { addFromExcel, asignDriversToStops, createFromExcel, createStop, disableStop, generateTemplate, getPayDetail, getPaysBySell, listStopByAdmin, listStopByUSer, listStops, listStopsCharts, listStopsComunas, processPay, updateStop } from "../controller/Stop";
 import multer from "multer";
 import { authConfirm } from "../middleware/Auth";
 
@@ -15,7 +15,9 @@ router.get('/pays/detail/:buyOrder', authConfirm, getPayDetail);
 router.get('/pays/:sellId', authConfirm, getPaysBySell);
 router.get('/downloadTemplate', authConfirm, generateTemplate);
 router.get('/chart/comuna', listStopsComunas);
+router.post('/asignDriver', authConfirm, asignDriversToStops);
 router.get('/chart', listStopsCharts);
+router.get('/byAdmin', listStopByAdmin);
 router.get('/:sellId', authConfirm, listStopByUSer);
 router.get('/'/* , authConfirm */, listStops);
 router.put('/disable', authConfirm, disableStop);

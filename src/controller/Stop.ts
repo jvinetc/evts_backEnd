@@ -1,16 +1,18 @@
 import { Request, Response } from "express";
 import { Stop } from "../models/Stop";
-import { create, update, list, byField, byFieldWithRelations, remove, listWithRelations } from "./crudController";
+import { create, update, list, byField, byFieldWithRelations, remove, listWithRelations, oneByFieldWithRelations } from "./crudController";
 import { model } from "mongoose";
-import { Comuna, Rate, Sell, Payment } from "../models";
+import { Comuna, Rate, Sell, Payment, Driver, User } from "../models";
 import { formatResponse } from '../util/util'
 import { IStop } from "../interface/Stop";
 import xlsx from 'xlsx';
 import axios from "axios";
 import { registerMiddleware } from "../middleware/User";
 import { IComuna } from "../interface/Comuna";
-import { Sequelize, where } from "sequelize";
+import { Sequelize, where, WhereOptions } from "sequelize";
 import dayjs from "dayjs";
+import { Op } from "sequelize";
+import { IDriver } from "../interface/Driver";
 const baseUrl = process.env.BASE_URL || '';
 
 export const createStop = async (req: Request, res: Response) => {
@@ -53,9 +55,9 @@ export const listStops = async (req: Request, res: Response) => {
     res.status(201).json(formatResponse(true, stops, 'Listado de paradas para administrador', false));
 }
 
-type ResponseChart={
-    label:string;
-    value:number;
+type ResponseChart = {
+    label: string;
+    value: number;
 }
 export const listStopsCharts = async (req: Request, res: Response) => {
     const stops = await list(Stop, {
@@ -63,7 +65,7 @@ export const listStopsCharts = async (req: Request, res: Response) => {
             [Sequelize.literal(`"createAt"::date`), 'label'],
             [Sequelize.fn('COUNT', Sequelize.col('id')), 'value'] // Conteo de IDs
         ],
-        group:[Sequelize.literal(`"createAt"::date`)],
+        group: [Sequelize.literal(`"createAt"::date`)],
         raw: true // Devuelve resultados como objetos planos
     });
     if (!stops) {
@@ -256,6 +258,105 @@ export const getPayDetail = async (req: Request, res: Response) => {
             { model: Sell, attributes: ['id', 'name', 'email', 'addresPickup'] }
         ]);
         res.status(200).json(stops);
+    } catch (error) {
+        res.status(500).json({ message: error });
+        console.log(error);
+    }
+
+}
+
+interface FilterQuery {
+    limit?: number;
+    page?: number;
+    order?: string;
+    search?: string;
+    comunaId?: number;
+}
+
+export const listStopByAdmin = async (req: Request<{}, {}, {}, FilterQuery>, res: Response) => {
+    const { order, search, comunaId } = req.query;
+    const limit = Number(req.query.limit) || 5;
+    const page = Number(req.query.page) || 1;
+    const offset = page ? (page - 1) * limit : 0;
+    const [field, direction] = order ? order.split('_') : 'id_ASC'.split('_');
+    const field2 = field === "creation" ? 'createAt' : field;
+    let filter: WhereOptions = {};
+    if (search && search.trim()) {
+        filter[Op.or] = [
+            { addresName: { [Op.iLike]: `${search}%` } },
+            { '$Sell.name$': { [Op.iLike]: `${search}%` } },
+            { addres: { [Op.iLike]: `${search}%` } }
+        ];
+    }
+
+    const { rows: stops, count } = await Stop.findAndCountAll({
+        where: filter,
+        limit: limit,
+        offset: offset,
+        order: [[field2, direction]],
+        include: [
+            { model: Comuna, attributes: ['name', 'id'] },
+            { model: Rate, attributes: ['id', 'nameService', 'price'] },
+            {
+                model: Sell, attributes: ['id', 'name', 'email', 'addresPickup'],
+                include: [
+                    { model: Comuna, attributes: ['name', 'id'] }
+                ]
+            },
+            {
+                model: Driver, attributes: ['id', 'userId', 'patente'],
+                include: [
+                    {
+                        model: User,
+                        attributes: ['firstName', 'lastName', 'id']
+                    }
+                ]
+            }
+        ]
+    });
+    if (!stops) {
+        res.status(500).json({ message: 'Error al cargar su listado' })
+        return;
+    }
+    res.status(200).json({ stops, count });
+}
+
+export const asignDriversToStops = async (req: Request, res: Response) => {
+    try {
+        const stops = await list(Stop, {
+            where: {
+                [Op.or]: [
+                    { status: 'pickUp' },
+                    { status: 'delivered' }
+                ]
+            }
+        });
+
+        if (!stops) {
+            res.status(400).json({ message: 'No hay paradas para asignar a conductor' });
+            return;
+        }
+        let driv: IDriver[]=[];
+        await Promise.all(stops.map(async (s) => {
+            const stop = s.dataValues;
+            const driver = await Driver.findOne({
+                include: [
+                    {
+                        model: Comuna,
+                        attributes: ['name', 'id'],
+                        required: true,
+                        where: { id: stop.comunaId }
+                    }
+                ]
+            });
+            if (driver) {
+                await update(Stop,{id:Number(stop.id)}, {driverId: Number(driver.dataValues.id)});
+            }
+        })
+        )
+
+        const st= await list(Stop)
+        res.status(200).json({ st });
     } catch (error) {
         res.status(500).json({ message: error });
         console.log(error);

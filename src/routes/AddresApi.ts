@@ -4,7 +4,7 @@ import { authConfirm } from "../middleware/Auth";
 
 const router = Router();
 
-router.get('/detail/:placeId',authConfirm, detailAddres);
-router.post('/:textInput',authConfirm , autocomplete);
+router.get('/detail/:placeId', detailAddres);
+router.post('/:textInput', autocomplete);
 
 export default router;
