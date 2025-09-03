@@ -1,6 +1,5 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
-//import { connectDB } from './db/db';
 import comunaRouter from './routes/Comuna';
 import driverRouter from './routes/Driver';
 import rateRouter from './routes/Rate';
@@ -10,11 +9,15 @@ import stopRouter from './routes/Stop';
 import userRouter from './routes/User';
 import imageRouter from './routes/Images'
 import autoRouter from './routes/AddresApi';
-import banckRouter from './routes/ApiTransBanck'
+import banckRouter from './routes/ApiTransBanck';
+import payRouter from './routes/Payment';
+import notificationRouter from './routes/Notification';
 import bodyParser from 'body-parser';
 import { genAuthUrl } from "./util/generateAuthorizationUrl";
 import { oAuth2Callback } from "./util/generateRefreshToken";
 import { sequelize } from './models';
+import { httpServer, app } from './util/createSocket';
+
 
 sequelize.sync({ alter: true })
   .then(() => {
@@ -24,9 +27,10 @@ sequelize.sync({ alter: true })
     console.error('❌ Error al sincronizar tablas:', error);
   });
 
-const app = express();
+//const app = express();
 
 //connectDB();
+
 
 const port = process.env.PORT || 3000;
 
@@ -34,7 +38,7 @@ app.use(express.json());
 app.use(cors());
 
 app.get('/', async (req: Request, res: Response) => {
-    res.send('Bienvenido a la api de envios todo santiago');
+  res.send('Bienvenido a la api de envios todo santiago');
 });
 app.get('/config', (req, res) => {
   res.json({ redirectUrl: process.env.POST_VERIFY });
@@ -65,10 +69,14 @@ app.use('/stop', stopRouter);
 app.use('/user', userRouter);
 app.use('/image', imageRouter);
 app.use('/autocomplete', autoRouter);
+app.use('/pay', payRouter);
 app.use('/payments', banckRouter);
+app.use('/notification', notificationRouter);
 app.use(`/uploads`, express.static("uploads"));
 app.use(bodyParser.urlencoded({ extended: true }));
 
-app.listen(port, () => {
-    console.log(`Servicodr disponible en http://localhost:${port}`)
+httpServer.listen(port, () => {
+  console.log(`Servidor disponible en http://localhost:${port}`)
 });
+
+export {app};

@@ -13,6 +13,7 @@ import { Sequelize, where, WhereOptions } from "sequelize";
 import dayjs from "dayjs";
 import { Op } from "sequelize";
 import { IDriver } from "../interface/Driver";
+import { createNotification, sendPushNotification } from "./Notification";
 const baseUrl = process.env.BASE_URL || '';
 
 export const createStop = async (req: Request, res: Response) => {
@@ -21,7 +22,33 @@ export const createStop = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
         return;
     }
-    res.status(201).json(stop);
+    try {
+        await createNotification({
+            type: 'admin', sellId: req.body.sellId, title: 'Nueva parada creada',
+            message: 'Nueva parada agregada, pendiente de pago',
+        });
+        /* const user = await User.findOne({
+            include: [{
+                model: Sell, attributes: ['id'], required: true,
+                where: { id: req.body.sellId }
+            }]
+        })
+        if (user) {
+            await sendPushNotification(user.dataValues.expoPushToken, 'Creacion',
+                `Punto creado exitosamente`);
+            await createNotification({
+                title: 'Creacion',
+                message: `Punto creado por io`,
+                type: 'client',
+                sellId: Number(req.body.sellId),
+                userId: user.dataValues.id
+            });
+        } */
+        res.status(201).json(stop);
+    } catch (error) {
+        console.log(error);
+    }
+
 }
 
 export const updateStop = async (req: Request, res: Response) => {
@@ -31,6 +58,16 @@ export const updateStop = async (req: Request, res: Response) => {
         return;
     }
     res.status(200).json(stop);
+}
+
+export const getStopById = async (req: Request, res: Response) => {
+    const { id } = req.params;
+    const stop = await byField(Stop, { id: id });
+    if (!stop) {
+        res.status(500).json({ message: 'no fue posible cargar la informacion, revisa la consola' })
+        return;
+    }
+    res.status(200).json(stop.dataValues);
 }
 
 export const disableStop = async (req: Request, res: Response) => {
@@ -44,15 +81,30 @@ export const disableStop = async (req: Request, res: Response) => {
 }
 
 export const listStops = async (req: Request, res: Response) => {
-    const stops = await listWithRelations(Stop, [
+    const stops = await listWithRelations(Stop, { where: { [Op.or]: [{ status: 'pickUp' }, { status: 'delivery' }] } }, [
         { model: Comuna, attributes: ['name', 'id'] },
         { model: Rate, attributes: ['id', 'nameService', 'price'] },
-        { model: Sell, attributes: ['id', 'name', 'email', 'addresPickup'] }]);
+        {
+            model: Sell, attributes: ['id', 'name', 'email', 'addresPickup'],
+            include: [
+                { model: Comuna, attributes: ['name', 'id'] }
+            ]
+        },
+        {
+            model: Driver, attributes: ['id', 'userId', 'patente'],
+            include: [
+                {
+                    model: User,
+                    attributes: ['firstName', 'lastName', 'id']
+                }
+            ]
+        }
+    ]);
     if (!stops) {
         res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
         return;
     }
-    res.status(201).json(formatResponse(true, stops, 'Listado de paradas para administrador', false));
+    res.status(201).json(stops);
 }
 
 type ResponseChart = {
@@ -336,7 +388,9 @@ export const asignDriversToStops = async (req: Request, res: Response) => {
             res.status(400).json({ message: 'No hay paradas para asignar a conductor' });
             return;
         }
-        let driv: IDriver[]=[];
+        let driv: IDriver[] = [];
+        let countPickUp: number = 0;
+        let sells: number[] = [];
         await Promise.all(stops.map(async (s) => {
             const stop = s.dataValues;
             const driver = await Driver.findOne({
@@ -350,12 +404,12 @@ export const asignDriversToStops = async (req: Request, res: Response) => {
                 ]
             });
             if (driver) {
-                await update(Stop,{id:Number(stop.id)}, {driverId: Number(driver.dataValues.id)});
+                await update(Stop, { id: Number(stop.id) }, { driverId: Number(driver.dataValues.id) });
             }
         })
         )
 
-        const st= await list(Stop)
+        const st = await list(Stop)
         res.status(200).json({ st });
     } catch (error) {
         res.status(500).json({ message: error });

@@ -13,6 +13,7 @@ export const User = sequelize.define('User', {
   phone_contact: { type: DataTypes.STRING }, // puede ser null
   password: { type: DataTypes.STRING, allowNull: false },
   verification_token: { type: DataTypes.STRING },
+  expoPushToken: { type: DataTypes.STRING },
   birthDate: { type: DataTypes.DATE },
   createAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
   updateAt: { type: DataTypes.DATE }

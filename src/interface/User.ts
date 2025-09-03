@@ -13,6 +13,7 @@ export interface IUser {
     roleId: number,
     photo?: string,
     verification_token?: string,
+    expoPushToken?: string;
     birthDate?: Date;
     createAt: Date;
     updateAt?: Date;
