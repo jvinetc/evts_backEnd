@@ -3,7 +3,7 @@ import { getNotificationAdmin, getNotificationClient, getNotRead, getNotReadC, m
 import { authConfirm } from "../middleware/Auth";
 const router = Router();
 
-router.get('/byClient', getNotificationClient)
+router.get('/byClient/:id', getNotificationClient)
 router.get('/byAdmin', getNotificationAdmin);
 router.get('/notRead/:sellId', getNotReadC);
 router.get('/notRead', getNotRead);

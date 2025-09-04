@@ -12,8 +12,8 @@ export const createNotification = async ({ title, message, read, type, sellId, u
     if (!not && !type) {
         console.log(not);
         return false;
-    }    
-        io.emit(type ?? '', { newNotification: true })
+    }
+    io.emit(type ?? '', { newNotification: true })
     return true;
 }
 
@@ -26,7 +26,8 @@ export const getNotificationAdmin = async (req: Request, res: Response) => {
 }
 
 export const getNotificationClient = async (req: Request, res: Response) => {
-    const notifications = await list(Notification, { where: { type: 'client' }, order: [['id', 'DESC']], });
+    const { id } = req.params;
+    const notifications = await list(Notification, { where: { type: 'client', sellId: id }, order: [['id', 'DESC']], });
     if (!notifications) {
         res.status(500).json({ message: "error al cargar las notificaciones" })
     }
@@ -46,7 +47,7 @@ export const markToRead = async (req: Request, res: Response) => {
 export const getNotRead = async (req: Request, res: Response) => {
     try {
         const response = await Notification.findAll
-            ({ where: { read: false, type:'admin' }, order: [['id', 'DESC']], });
+            ({ where: { read: false, type: 'admin' }, order: [['id', 'DESC']], });
         res.status(200).send(response);
     } catch (error) {
         console.log(error);
@@ -55,10 +56,10 @@ export const getNotRead = async (req: Request, res: Response) => {
 }
 
 export const getNotReadC = async (req: Request, res: Response) => {
-    const {sellId} = req.params;
+    const { sellId } = req.params;
     try {
         const response = await Notification.findAll
-            ({ where: { read: false, type:'client', sellId }, order: [['id', 'DESC']], });
+            ({ where: { read: false, type: 'client', sellId }, order: [['id', 'DESC']], });
         res.status(200).send(response);
     } catch (error) {
         console.log(error);
@@ -66,31 +67,31 @@ export const getNotReadC = async (req: Request, res: Response) => {
     }
 }
 
-export const asignNotification=({})=>{
+export const asignNotification = ({ }) => {
 
 }
 
 export const sendPushNotification = async (expoPushToken: string, title: string, body: string) => {
-  if (!Expo.isExpoPushToken(expoPushToken)) return;
+    if (!Expo.isExpoPushToken(expoPushToken)) return;
 
-  const message = {
-    to: expoPushToken,
-    sound: 'default',
-    title,
-    body,
-    data: { type: 'pago', timestamp: Date.now() },
-  };
+    const message = {
+        to: expoPushToken,
+        sound: 'default',
+        title,
+        body,
+        data: { type: 'pago', timestamp: Date.now() },
+    };
 
-  const chunks = expo.chunkPushNotifications([message]);
-  for (const chunk of chunks) {
-    await expo.sendPushNotificationsAsync(chunk);
-  }
+    const chunks = expo.chunkPushNotifications([message]);
+    for (const chunk of chunks) {
+        await expo.sendPushNotificationsAsync(chunk);
+    }
 };
 
 export const saveExpoToken = async (req: Request, res: Response) => {
-  const { userId, expoToken } = req.body;
-  if (!userId || !expoToken) return res.status(400).json({ error: 'Datos incompletos' });
+    const { userId, expoToken } = req.body;
+    if (!userId || !expoToken) return res.status(400).json({ error: 'Datos incompletos' });
 
-  await User.update({ expoPushToken: expoToken }, { where: { id: userId } });
-  res.json({ success: true });
+    await User.update({ expoPushToken: expoToken }, { where: { id: userId } });
+    res.json({ success: true });
 }

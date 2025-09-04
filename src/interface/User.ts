@@ -1,20 +1,20 @@
 
 export interface IUser {
     id?: number,
-    firstName: string,
-    lastName: string,
+    firstName?: string,
+    lastName?: string,
     email: string,
-    username: string,
-    age: number,
-    state: string,
-    mobile: string,
+    username?: string,
+    age?: number,
+    state?: string,
+    mobile?: string,
     contact?: string,
-    password: string,
-    roleId: number,
+    password?: string,
+    roleId?: number,
     photo?: string,
     verification_token?: string,
     expoPushToken?: string;
     birthDate?: Date;
-    createAt: Date;
+    createAt?: Date;
     updateAt?: Date;
 }
