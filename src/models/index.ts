@@ -9,6 +9,7 @@ import { User } from "./User";
 import { Images } from "./Images";
 import { Payment } from "./Payment";
 import { Notification } from "./Notification";
+import { PickUp } from "./PickUp";
 
 // User ↔ Role
 Role.hasMany(User, { foreignKey: 'roleId' });
@@ -56,6 +57,13 @@ Stop.belongsTo(Rate, { foreignKey: 'rateId' });
 User.hasMany(Notification, { foreignKey: 'userId' });
 Notification.belongsTo(User, { foreignKey: 'userId' });
 
-// 👇 Puedes agregar la tabla Rate luego si la migras
+PickUp.belongsTo(Sell, {foreignKey:'sellId'});
+PickUp.belongsTo(Driver, {foreignKey:'driverId'});
+PickUp.belongsTo(Stop, {foreignKey:'stopId'});
+Sell.hasMany(PickUp, {foreignKey:'sellId'});
+Driver.hasMany(PickUp, {foreignKey:'driverId'});
+Stop.hasMany(PickUp, {foreignKey:'stopId'});
 
-export { sequelize, User, Role, Comuna, Sell, Driver, Stop, Rate, Images, Payment, Notification };
+// 👇 agregar las tablas
+
+export { sequelize, User, Role, Comuna, Sell, Driver, Stop, Rate, Images, Payment, PickUp, Notification };

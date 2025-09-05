@@ -1,7 +1,6 @@
 import { create, update, list, byField } from "./crudController";
 import { Rate } from "../models/Rate";
 import { Request, Response } from "express";
-import { now } from "mongoose";
 import { WhereOptions } from "sequelize";
 import { Op } from "sequelize";
 
@@ -25,7 +24,7 @@ export const updateRate = async (req: Request, res: Response) => {
 
 export const disableRate = async (req: Request, res: Response) => {
     const {id} = req.params;
-        const driver = await update(Rate, { id: id }, {state: "inactive", updateAt:now()});
+        const driver = await update(Rate, { id: id }, {state: "inactive", updateAt:new Date()});
         if (!driver) {
             res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
             return;

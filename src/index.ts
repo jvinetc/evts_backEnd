@@ -11,6 +11,7 @@ import imageRouter from './routes/Images'
 import autoRouter from './routes/AddresApi';
 import banckRouter from './routes/ApiTransBanck';
 import payRouter from './routes/Payment';
+import pickUpRouter from './routes/PickUp';
 import notificationRouter from './routes/Notification';
 import bodyParser from 'body-parser';
 import { genAuthUrl } from "./util/generateAuthorizationUrl";
@@ -71,6 +72,7 @@ app.use('/image', imageRouter);
 app.use('/autocomplete', autoRouter);
 app.use('/pay', payRouter);
 app.use('/payments', banckRouter);
+app.use('/pickUp', pickUpRouter);
 app.use('/notification', notificationRouter);
 app.use(`/uploads`, express.static("uploads"));
 app.use(bodyParser.urlencoded({ extended: true }));

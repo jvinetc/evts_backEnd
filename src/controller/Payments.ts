@@ -39,7 +39,7 @@ export const listSellsPaysCharts = async (req: Request, res: Response) => {
         ],
         group: ['sellId', 'Sell.name', 'Sell.id'],
         raw: true, // Devuelve resultados como objetos planos
-        include: [{ model: Sell, attibutes: [], required: true }]
+        include: [{ model: Sell, attributes: [], required: true }]
     });
     if (!payments) {
         res.status(500).json({ message: 'no fue cargar los datos, revisa la consola' })

@@ -1,8 +1,8 @@
 import { Request, Response } from "express";
-import { Driver, Comuna, User } from "../models";
-import { create, update, list, byField, byFieldWithRelations, oneByFieldWithRelations } from "./crudController";
+import { Driver, Comuna, User, Stop } from "../models";
+import { create, update, list, byField, byFieldWithRelations, oneByFieldWithRelations, listWithRelations } from "./crudController";
 import { IDriver } from "../interface/Driver";
-import { Op, WhereOptions } from "sequelize";
+import { Op, Sequelize, WhereOptions } from "sequelize";
 import { IUser } from "../interface/User";
 import * as fs from 'fs';
 import { cloudinary } from "../util/cloudinary";
@@ -23,11 +23,11 @@ export const createDriver = async (req: Request, res: Response) => {
     }
     driver.userId = userR.dataValues.id;
     driver.liceciaConducir = files[0].filename;
-    driver.urlLiceciaConducir=files[0].path;
+    driver.urlLiceciaConducir = files[0].path;
     driver.permisoCirculacion = files[1].filename;
-    driver.urlPermisoCirculacion= files[1].path;
+    driver.urlPermisoCirculacion = files[1].path;
     driver.revicionTecnica = files[2].filename;
-    driver.urlRevicionTecnica= files[2].path;
+    driver.urlRevicionTecnica = files[2].path;
     driver.vencimientoLiceciaConducir = expiration1;
     driver.vencimientoPermisoCirculacion = expiration2;
     driver.vencimientoRevicionTecnica = expiration3;
@@ -65,13 +65,13 @@ export const updateDriver = async (req: Request, res: Response) => {
         if (files.file1 && expiration1) {
             cloudinary.uploader.destroy(driv.liceciaConducir);
             driv.liceciaConducir = files.file1[0].filename;
-            driv.urlLiceciaConducir= files.file1[0].path;
+            driv.urlLiceciaConducir = files.file1[0].path;
             driv.vencimientoLiceciaConducir = expiration1;
         }
 
         // Permiso de circulación
         if (files.file2 && expiration2) {
-           cloudinary.uploader.destroy(driv.permisoCirculacion);
+            cloudinary.uploader.destroy(driv.permisoCirculacion);
             driv.permisoCirculacion = files.file2[0].filename;
             driv.urlPermisoCirculacion = files.file2[0].path;
             driv.vencimientoPermisoCirculacion = expiration2;
@@ -186,4 +186,33 @@ export const getDriverById = async (req: Request, res: Response) => {
         res.status(500).json({ message: ' no existen registros' });
     }
     res.status(200).json(driver);
+}
+
+export const getDriverDeliveredChart = async (req: Request, res: Response) => {
+    const drivers = await listWithRelations(Driver, {
+        attributes: [
+            [Sequelize.fn('COUNT', Sequelize.col('Stops.id')), 'value'], // Conteo de IDs
+            [Sequelize.col('User.firstName'), 'label']
+        ],
+        group: ['User.firstName'],
+        raw: true // Devuelve resultados como objetos planos
+    },
+        [{
+            model: Stop, attributes: [],
+            where: { status: 'delivered' },
+            required: true
+        },
+        {
+            model: User, attributes: [],
+            required: true
+        }]);
+    if (!drivers) {
+        res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
+        return;
+    }
+    const datosLimpios = drivers.map(({ label, value }) => ({
+        value,
+        label
+    }));
+    res.status(200).json(datosLimpios);
 }

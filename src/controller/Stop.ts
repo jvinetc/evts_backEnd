@@ -27,23 +27,7 @@ export const createStop = async (req: Request, res: Response) => {
             type: 'admin', sellId: req.body.sellId, title: 'Nueva parada creada',
             message: 'Nueva parada agregada, pendiente de pago',
         });
-        /* const user = await User.findOne({
-            include: [{
-                model: Sell, attributes: ['id'], required: true,
-                where: { id: req.body.sellId }
-            }]
-        })
-        if (user) {
-            await sendPushNotification(user.dataValues.expoPushToken, 'Creacion',
-                `Punto creado exitosamente`);
-            await createNotification({
-                title: 'Creacion',
-                message: `Punto creado por io`,
-                type: 'client',
-                sellId: Number(req.body.sellId),
-                userId: user.dataValues.id
-            });
-        } */
+        
         res.status(201).json(stop);
     } catch (error) {
         console.log(error);
@@ -122,7 +106,7 @@ export const listStopsDelivered = async (req: Request<{}, {}, {}, FilterQuery>, 
     const offset = page ? (page - 1) * limit : 0;
     const [field, direction] = order ? order.split('_') : 'id_ASC'.split('_');
     const field2 = field === "creation" ? 'createAt' : field;
-    let filter: WhereOptions = {status: 'delivered'};
+    let filter: WhereOptions = { status: 'delivered' };
     if (search && search.trim()) {
         filter[Op.or] = [
             { '$Sell.name$': { [Op.iLike]: `${search}%` } },
@@ -131,7 +115,7 @@ export const listStopsDelivered = async (req: Request<{}, {}, {}, FilterQuery>, 
         ];
     }
     try {
-        const {rows:stops, count} = await Stop.findAndCountAll({
+        const { rows: stops, count } = await Stop.findAndCountAll({
             where: filter,
             limit: limit,
             offset: offset,
@@ -160,7 +144,7 @@ export const listStopsDelivered = async (req: Request<{}, {}, {}, FilterQuery>, 
             ]
         });
 
-        res.status(200).json({stops, count});
+        res.status(200).json({ stops, count });
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
@@ -223,18 +207,19 @@ export const listStopsComunas = async (req: Request, res: Response) => {
     const stops = await listWithRelations(Stop, {
         attributes: [
             'comunaId',
-            [Sequelize.fn('COUNT', Sequelize.col('Stop.id')), 'value'] // Conteo de IDs
+            [Sequelize.fn('COUNT', Sequelize.col('Stop.id')), 'value'], // Conteo de IDs
+            [Sequelize.col('Comuna.name'), 'label']
         ],
-        group: ['comunaId', 'Comuna.name'],
+        group: ['comunaId', 'Comuna.name', 'Comuna.id'],
         raw: true // Devuelve resultados como objetos planos
     },
-        [{ model: Comuna, attributes: [['name', 'label']] }]);
+        [{ model: Comuna, attributes: [], required: true }]);
     if (!stops) {
         res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
         return;
     }
-    const datosLimpios = stops.map(({ ['Comuna.label']: label, ...rest }) => ({
-        ...rest,
+    const datosLimpios = stops.map(({ label, value }) => ({
+        value,
         label
     }));
     res.status(200).json(datosLimpios);

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { createDriverMiddleware, updateDriverMiddleware } from "../middleware/Driver";
-import { createDriver, disableDriver, getDriverById, getDrivers, updateDriver } from "../controller/Driver";
+import { createDriver, disableDriver, getDriverById, getDriverDeliveredChart, getDrivers, updateDriver } from "../controller/Driver";
 import { authConfirm } from "../middleware/Auth";
 import multer from "multer";
 import path from 'path';
@@ -40,6 +40,7 @@ export const upload = multer({
   }
 }); */
 router.post('/', upload.array('file'), createDriverMiddleware, createDriver);
+router.get('/getDeliveredChart', getDriverDeliveredChart);
 router.get('/:id', getDriverById);
 router.get('/'/* , authConfirm */, getDrivers);
 router.put('/disable', authConfirm, disableDriver);
