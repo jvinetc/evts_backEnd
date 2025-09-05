@@ -131,10 +131,9 @@ export const loginMiddleware = async (req: Request, res: Response, next: NextFun
 
 export const updateUserMiddleware = async (req: Request, res: Response, next: NextFunction) => {
     const date = now();
-    const { id, firstName, lastName, email, age, password, phone, username } = req.body;
+    const { id, firstName, lastName, email, age, password, phone, birthDate, username } = req.body;
     const url = req.url;
     let passCrypt;
-    let state;
 
     console.log(
         `Fecha de la consulta: ${new Date()}; URL consultada: ${url}; Datos recibidas: `,
@@ -159,59 +158,36 @@ export const updateUserMiddleware = async (req: Request, res: Response, next: Ne
             typeof username !== "string" ||
             !username.trim()
         ) {
-            return res
+            res
                 .status(400)
                 .json({
                     message: "Los campos deben estar completos y ser texto válido",
                 });
+            console.log('campos vacios');
+            return;
         }
 
         if (isNaN(Number(age))) {
-            return res.status(400).json({ message: "La edad debe ser numérica" });
+            res.status(400).json({ message: "La edad debe ser numérica" });
+            console.log('error de edad');
+            return
         }
 
         if (Number(age) < 18) {
-            return res
+            res
                 .status(400)
                 .json({ message: "Para ingresar debe ser mayor de edad" });
+            console.log('menor de edad');
+            return;
         }
 
         if (!emailFormat.test(email)) {
-            return res
+            res
                 .status(400)
                 .json({ message: "El correo no posee un formato correcto" });
+            console.log('correo invalido');
+            return;
         }
-
-        if (password) {
-            passCrypt = bcrypt.hashSync(password, 10);
-            req.body = {
-                id,
-                firstName,
-                lastName,
-                email,
-                age: Number(age),
-                username,
-                password: passCrypt,
-                phone,
-                updateAt: date,
-            };
-        } else {
-            req.body = {
-                id,
-                firstName,
-                lastName,
-                email,
-                age: Number(age),
-                username,
-                phone,
-                state,
-                updateAt: date,
-            };
-        }
-
-
-
-
         next();
     } catch (error) {
         return res

@@ -85,6 +85,94 @@ export const listStops = async (req: Request, res: Response) => {
         { model: Comuna, attributes: ['name', 'id'] },
         { model: Rate, attributes: ['id', 'nameService', 'price'] },
         {
+            model: Sell, attributes: ['id', 'name', 'email', 'addresPickup', 'lat', 'lng'],
+            include: [
+                { model: Comuna, attributes: ['name', 'id'] }
+            ]
+        },
+        {
+            model: Driver, attributes: ['id', 'userId', 'patente'],
+            include: [
+                {
+                    model: User,
+                    attributes: ['firstName', 'lastName', 'id']
+                }
+            ]
+        }
+    ]);
+    if (!stops) {
+        res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
+        return;
+    }
+    res.status(201).json(stops);
+}
+
+interface FilterQuery {
+    limit?: number;
+    page?: number;
+    order?: string;
+    search?: string;
+    comunaId?: number;
+}
+
+export const listStopsDelivered = async (req: Request<{}, {}, {}, FilterQuery>, res: Response) => {
+    const { order, search } = req.query;
+    const limit = Number(req.query.limit) || 5;
+    const page = Number(req.query.page) || 1;
+    const offset = page ? (page - 1) * limit : 0;
+    const [field, direction] = order ? order.split('_') : 'id_ASC'.split('_');
+    const field2 = field === "creation" ? 'createAt' : field;
+    let filter: WhereOptions = {status: 'delivered'};
+    if (search && search.trim()) {
+        filter[Op.or] = [
+            { '$Sell.name$': { [Op.iLike]: `${search}%` } },
+            { '$Comuna.name$': { [Op.iLike]: `${search}%` } },
+            { addres: { [Op.iLike]: `${search}%` } }
+        ];
+    }
+    try {
+        const {rows:stops, count} = await Stop.findAndCountAll({
+            where: filter,
+            limit: limit,
+            offset: offset,
+            order: [[field2, direction]],
+            include: [
+                { model: Comuna, attributes: ['name', 'id'], required: true },
+                { model: Rate, attributes: ['id', 'nameService', 'price'] },
+                {
+                    model: Sell, attributes: ['id', 'name', 'email', 'addresPickup'],
+                    required: true,
+                    include: [
+                        { model: Comuna, attributes: ['name', 'id'] }
+                    ]
+                },
+                {
+                    model: Driver, attributes: ['id', 'userId', 'patente'],
+                    required: true,
+                    include: [
+                        {
+                            model: User,
+                            attributes: ['firstName', 'lastName', 'id'],
+                            required: true
+                        }
+                    ]
+                }
+            ]
+        });
+
+        res.status(200).json({stops, count});
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
+    }
+
+}
+
+export const listStopsPending = async (req: Request, res: Response) => {
+    const stops = await listWithRelations(Stop, { where: { status: 'to_be_paid' } }, [
+        { model: Comuna, attributes: ['name', 'id'] },
+        { model: Rate, attributes: ['id', 'nameService', 'price'] },
+        {
             model: Sell, attributes: ['id', 'name', 'email', 'addresPickup'],
             include: [
                 { model: Comuna, attributes: ['name', 'id'] }
@@ -317,14 +405,6 @@ export const getPayDetail = async (req: Request, res: Response) => {
 
 }
 
-interface FilterQuery {
-    limit?: number;
-    page?: number;
-    order?: string;
-    search?: string;
-    comunaId?: number;
-}
-
 export const listStopByAdmin = async (req: Request<{}, {}, {}, FilterQuery>, res: Response) => {
     const { order, search, comunaId } = req.query;
     const limit = Number(req.query.limit) || 5;
@@ -379,9 +459,14 @@ export const asignDriversToStops = async (req: Request, res: Response) => {
             where: {
                 [Op.or]: [
                     { status: 'pickUp' },
-                    { status: 'delivered' }
+                    { status: 'delivery' }
                 ]
-            }
+            },
+            include: [
+                {
+                    model: Sell, attributes: ['comunaId']
+                }
+            ]
         });
 
         if (!stops) {
@@ -393,13 +478,20 @@ export const asignDriversToStops = async (req: Request, res: Response) => {
         let sells: number[] = [];
         await Promise.all(stops.map(async (s) => {
             const stop = s.dataValues;
+            let condition: {} = {};
+            if (stop.status === 'pickUp') {
+                condition = { id: stop.Sell.comunaId }
+            } else if (stop.status === 'delivery') {
+                condition = { id: stop.comunaId };
+            }
+
             const driver = await Driver.findOne({
                 include: [
                     {
                         model: Comuna,
                         attributes: ['name', 'id'],
                         required: true,
-                        where: { id: stop.comunaId }
+                        where: condition
                     }
                 ]
             });

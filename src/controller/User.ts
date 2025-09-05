@@ -102,6 +102,7 @@ export const verify = async (req: Request, res: Response) => {
             res.end(data);
         });
     } catch (error) {
+        console.log(error);
         res.status(500).json({ message: error });
     }
 }
@@ -115,16 +116,32 @@ export const disableUser = async (req: Request, res: Response) => {
     res.status(201).json(driver);
 }
 
+
 export const updateUser = async (req: Request, res: Response) => {
-    const user = await update(User, { id: req.body.id }, req.body);
-    if (!user) {
-        res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
-        return;
-    }
-    const userReturn = await byFieldWithRelations(User, { id: req.body.id }, [
+    const user: IUser = req.body;
+    try {
+        console.log('user:', user);
+        let us;
+        if (user.password && user.password !== '') {
+            user.password = bcrypt.hashSync(user.password, 10);
+            us = await update(User, { id: user.id }, user);
+        }else{
+            const {password, ...safeUSer}= user;
+            us = await update(User, { id: user.id }, safeUSer);
+        }
+        
+        if (!us) {
+            res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
+            return;
+        }
+        const userReturn = await byFieldWithRelations(User, { id: user.id }, [
             { model: Role, attributes: ['name'] },
-            { model: Images, attributes: ['name'] },            
-            { model: Sell, attributes: ['id'] }
+            { model: Images, attributes: ['name', 'url'] },
+            { model: Sell, attributes: ['id', 'addresPickup', 'name', 'email', 'addres'] }
         ])
-    res.status(200).json(userReturn);
+        res.status(200).json(userReturn);
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
+    }
 }
