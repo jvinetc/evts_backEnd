@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer';
 import { google } from 'googleapis';
+const isLocalhost = process.env.DB_HOST === "localhost";
+const url = isLocalhost ? process.env.BASE_URL_MOBIL : process.env.BASE_URL;
 
 const oAuth2Client = new google.auth.OAuth2(
     process.env.CLIENT_ID,
@@ -28,7 +30,6 @@ export const sendVerificationEmail = async (email: string, localToken: string) =
                 accessToken: token
             }
         });
-        const url = process.env.BASE_URL;
         const verificationLink = `${url}/user/verify/${localToken}`;
         const info = await transporter.sendMail({
             from: `Envios Todo Santiago <${process.env.EMAIL_FROM}>`,
@@ -62,7 +63,7 @@ export const sendEmailByAdmin = async (email: string, localToken: string) => {
                 accessToken: token
             }
         });
-        const url = process.env.BASE_URL;
+
         const verificationLink = `${url}/user/verify/${localToken}`;
         const info = await transporter.sendMail({
             from: `Envios Todo Santiago <${process.env.EMAIL_FROM}>`,
