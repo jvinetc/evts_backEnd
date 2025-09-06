@@ -5,6 +5,6 @@ import { authConfirm } from "../middleware/Auth";
 const router = Router();
 
 router.get('/', authConfirm, listComunas);
-router.post('/', authConfirm, setComuna);
+router.post('/'/* , authConfirm */, setComuna);
 
 export default router;
