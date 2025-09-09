@@ -68,10 +68,26 @@ export const verifyPay = async (req: Request<{}, {}, {}, WebpayQuery>, res: Resp
             sellId: Number(sellId)
         }
         if (body.status !== 'AUTHORIZED') {
-            //return res.redirect(`${redirectUrl}/valida_pago?error="El pago no pudo ser procesado"`)
-            return res.status(400).json({ menssage: 'No fue autorizado el pago' })
+            return res.status(400).json({ menssage: 'No fue autorizado el pago' });
         }
         const sell = await byField(Sell, { id: sellId })
+
+        const user = await User.findOne({
+            include: [{
+                model: Sell, attributes: ['id'], required: true,
+                where: { id: sellId }
+            }]
+        })
+        if (!user)
+            return res.status(400).json({ menssage: 'No fue autorizado el pago' });
+
+        await update(Stop, { buyOrder: body.buy_order }, { status: 'pickUp' });
+        const payment = await create<VerifyResponse>(Payment, body);
+        if (!payment)
+            return res.status(400).json({ menssage: 'No fue autorizado el pago' });
+        
+        await sendPushNotification(user.dataValues.expoPushToken, 'Pago realizado',
+            `Transaccion realizada, pago registrado con exito orden numero: ${response.buy_order}`);
         await createNotification({
             title: 'Pago realizado',
             message: `Transaccion realizada, registrada con el numero de orden: ${response.buy_order}`,
@@ -88,20 +104,8 @@ export const verifyPay = async (req: Request<{}, {}, {}, WebpayQuery>, res: Resp
             sellId: Number(sellId),
             userId: sell?.dataValues.userId
         });
-        const user = await User.findOne({
-            include: [{
-                model: Sell, attributes: ['id'], required: true,
-                where: { id: sellId }
-            }]
-        })
-        if (user)
-            await sendPushNotification(user.dataValues.expoPushToken, 'Pago realizado',
-                `Transaccion realizada, pago registrado con exito orden numero: ${response.buy_order}`);
-        await update(Stop, { buyOrder: body.buy_order }, { status: 'pickUp' });
-        const payment = await create<VerifyResponse>(Payment, body);
-        if (payment)
-            //res.redirect(`${redirectUrl}/valida_pago?authorization_code=${body.authorization_code}`)
-            res.status(200).json({ authorization_code: body.authorization_code });
+
+        res.status(200).json({ authorization_code: body.authorization_code });
 
     } catch (error) {
         console.log(error);
