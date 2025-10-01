@@ -32,6 +32,7 @@ export const createTransaction = async (req: Request, res: Response) => {
             Number(amount),
             returnUrl
         )
+        console.log('token:',response.token)
         res.status(200).json({
             token: response.token,
             url: response.url

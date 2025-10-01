@@ -3,7 +3,7 @@ import { sequelize } from '../db/db';
 
 export const Notification = sequelize.define('Notification', {
     title: { type: DataTypes.STRING, allowNull: false },
-    message: { type: DataTypes.STRING }, // URL pública en Cloudinary
+    message: { type: DataTypes.STRING }, 
     userId: { type: DataTypes.INTEGER },
     sellId:{ type: DataTypes.INTEGER },
     type: { type: DataTypes.STRING },

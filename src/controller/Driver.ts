@@ -162,6 +162,7 @@ export const getDrivers = async (req: Request<{}, {}, {}, FilterQuery>, res: Res
             where: filter,
             limit: limit,
             offset: offset,
+            distinct:true,
             order: [[field2, direction]],
             include: [
                 { model: User, attributes: ['firstName', 'lastName', 'id'], required: !!search },

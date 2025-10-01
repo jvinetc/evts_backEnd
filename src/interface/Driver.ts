@@ -1,20 +1,22 @@
 import { IComuna } from "./Comuna";
+import { IUser } from "./User";
 
 export interface IDriver {
     id?: number,
-    userId: number,
-    patente: string,
-    permisoCirculacion: string,
-    vencimientoPermisoCirculacion: Date,
-    revicionTecnica: string,
-    vencimientoRevicionTecnica: Date,
-    liceciaConducir: string,
-    vencimientoLiceciaConducir: Date,
-    status: string,
+    userId?: number,
+    patente?: string,
+    permisoCirculacion?: string,
+    vencimientoPermisoCirculacion?: Date,
+    revicionTecnica?: string,
+    vencimientoRevicionTecnica?: Date,
+    liceciaConducir?: string,
+    vencimientoLiceciaConducir?: Date,
+    status?: string,
     urlPermisoCirculacion?: string;
     urlRevicionTecnica?: string;
     urlLiceciaConducir?: string;
-    createAt: Date,
+    createAt?: Date,
     updateAt?: Date,
     Comunas?: IComuna[];
+    User?:IUser;
 }

@@ -5,4 +5,6 @@ export interface IPickUp {
     stopId?: number;
     createAt?: Date;
     updateAt?: Date;
+    pickuDate?: string;
+    evidence?: string[];
 }

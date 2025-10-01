@@ -18,7 +18,8 @@ import { genAuthUrl } from "./util/generateAuthorizationUrl";
 import { oAuth2Callback } from "./util/generateRefreshToken";
 import { sequelize } from './models';
 import { httpServer, app } from './util/createSocket';
-
+//importaciones router circuit
+import circuitRouter from './apiCircuit/router/index';
 
 sequelize.sync({ alter: true })
   .then(() => {
@@ -74,6 +75,7 @@ app.use('/pay', payRouter);
 app.use('/payments', banckRouter);
 app.use('/pickUp', pickUpRouter);
 app.use('/notification', notificationRouter);
+app.use('/circuit', circuitRouter);
 app.use(`/uploads`, express.static("uploads"));
 app.use(bodyParser.urlencoded({ extended: true }));
 
@@ -81,4 +83,4 @@ httpServer.listen(port, () => {
   console.log(`Servidor disponible en http://localhost:${port}`)
 });
 
-export {app};
+export { app };

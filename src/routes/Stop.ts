@@ -13,7 +13,7 @@ router.post('/pay', authConfirm, processPay);
 router.post('/', createStopMiddleware, createStop);
 router.get('/pays/detail/:buyOrder', authConfirm, getPayDetail);
 router.get('/pays/:sellId', authConfirm, getPaysBySell);
-router.get('/downloadTemplate', authConfirm, generateTemplate);
+router.get('/downloadTemplate'/* , authConfirm */, generateTemplate);
 router.get('/chart/comuna', listStopsComunas);
 router.post('/asignDriver', authConfirm, asignDriversToStops);
 router.get('/chart', listStopsCharts);

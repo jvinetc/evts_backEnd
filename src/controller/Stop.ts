@@ -27,7 +27,7 @@ export const createStop = async (req: Request, res: Response) => {
             type: 'admin', sellId: req.body.sellId, title: 'Nueva parada creada',
             message: 'Nueva parada agregada, pendiente de pago',
         });
-        
+
         res.status(201).json(stop);
     } catch (error) {
         console.log(error);
@@ -88,6 +88,34 @@ export const listStops = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
         return;
     }
+    res.status(201).json(stops);
+}
+
+export const listStopsToMap = async (req: Request, res: Response) => {
+    const stops = await listWithRelations(Stop, { where: { [Op.or]: [{ status: 'pickUp' }, { status: 'delivery' }] } }, [
+        { model: Comuna, attributes: ['name', 'id'] },
+        { model: Rate, attributes: ['id', 'nameService', 'price'] },
+        {
+            model: Sell, attributes: ['id', 'name', 'email', 'addresPickup', 'lat', 'lng'],
+            include: [
+                { model: Comuna, attributes: ['name', 'id'] }
+            ]
+        },
+        {
+            model: Driver, attributes: ['id', 'userId', 'patente'],
+            include: [
+                {
+                    model: User,
+                    attributes: ['firstName', 'lastName', 'id']
+                }
+            ]
+        }
+    ]);
+    if (!stops) {
+        res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
+        return;
+    }
+
     res.status(201).json(stops);
 }
 
@@ -346,8 +374,8 @@ export const createFromExcel = async (req: Request, res: Response) => {
 
 export const generateTemplate = async (req: Request, res: Response) => {
     try {
-        const headers = ['direccion', 'cliente', 'comuna', 'telefono', 'referencias', 'frágil', 'devolución'];
-        const defaultRows = ['', '', '', '', '', false, false];
+        const headers = ['direccion', 'cliente', 'comuna', 'telefono', 'referencias', 'frágil', 'devolución', 'cambio'];
+        const defaultRows = ['', '', '', '', '', false, false, false];
         const worksheet = xlsx.utils.aoa_to_sheet([headers, defaultRows]);
         const workbook = xlsx.utils.book_new();
         xlsx.utils.book_append_sheet(workbook, worksheet, 'Template');
@@ -356,6 +384,7 @@ export const generateTemplate = async (req: Request, res: Response) => {
 
         res.setHeader('Content-Disposition', 'attachment; filename=Plantilla_Stops.xlsx');
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        res.attachment('Plantilla_Stops.xlsx');
         res.send(buffer);
     } catch (error) {
         res.status(500).json({ message: error });
