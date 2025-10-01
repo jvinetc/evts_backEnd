@@ -54,10 +54,10 @@ export const webHookCircuit = async (req: Request, res: Response) => {
         if (!receivedSignature) {
              throw new Error(`Error al obtener el certificado`);
          }
-         const message = req.body;
+         const rawBuffer = Buffer.from(JSON.stringify(req.body));
          const expectedSignature = crypto
              .createHmac('sha256', secret)
-             .update(message)
+             .update(rawBuffer)
              .digest('hex');
  
          if (

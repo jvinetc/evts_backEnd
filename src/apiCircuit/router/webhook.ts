@@ -3,6 +3,6 @@ import { webHookCircuit } from "../controller"
 
 const router = Router();
 
-router.post('/', express.raw({ type: '*/*' }), webHookCircuit);
+router.post('/', webHookCircuit);
 
 export default router;
