@@ -42,7 +42,7 @@ const statusFailed = {
 
 export const webHookCircuit = async (req: Request, res: Response) => {
     const { version, created, data, type } = req.body;
-    console.log('data:',data);
+    console.log('data:', data);
     try {
         const receivedSignature = req.get('circuit-signature');
         const secret = process.env.CIRCUIT_SECRET || 'abcdefghi123456789';
@@ -52,23 +52,24 @@ export const webHookCircuit = async (req: Request, res: Response) => {
         const year = fecha.getFullYear();
 
         if (!receivedSignature) {
-             throw new Error(`Error al obtener el certificado`);
-         }
-         const rawBuffer = Buffer.from(JSON.stringify(req.body));
-         const expectedSignature = crypto
-             .createHmac('sha256', secret)
-             .update(rawBuffer)
-             .digest('hex');
- 
-         if (
-             expectedSignature.length !== receivedSignature.length ||
-             !crypto.timingSafeEqual(
-                 Buffer.from(expectedSignature, 'hex'),
-                 Buffer.from(receivedSignature, 'hex'),
-             )
-         ) {
-             throw new Error(`Error, certificado invalido.`);
-         }
+            throw new Error(`Error al obtener el certificado`);
+        }
+        const rawBuffer = Buffer.from(JSON.stringify(req.body));
+        const expectedSignature = crypto
+            .createHmac('sha256', secret)
+            .update(rawBuffer)
+            .digest('hex');
+        console.log('receivedSignature:', receivedSignature);
+        console.log('expectedSignature:', expectedSignature);
+        if (
+            expectedSignature.length !== receivedSignature.length ||
+            !crypto.timingSafeEqual(
+                Buffer.from(expectedSignature, 'hex'),
+                Buffer.from(receivedSignature, 'hex'),
+            )
+        ) {
+            throw new Error(`Error, certificado invalido.`);
+        }
 
         if (type === "test.send_event") {
             res.status(200).send('Webhook received test');
