@@ -42,7 +42,7 @@ const statusFailed = {
 
 export const webHookCircuit = async (req: Request, res: Response) => {
     const { version, created, data, type } = req.body;
-    console.log('data:', data);
+    /* console.log('data:', data); */
     try {
         const receivedSignature = req.get('circuit-signature');
         const secret = process.env.CIRCUIT_SECRET || 'abcdefghi123456789';
@@ -59,7 +59,7 @@ export const webHookCircuit = async (req: Request, res: Response) => {
             .createHmac('sha256', secret)
             .update(rawBuffer)
             .digest('hex');
-        console.log('receivedSignature:', receivedSignature);
+       /*  console.log('receivedSignature:', receivedSignature);
         console.log('expectedSignature:', expectedSignature);
         if (
             expectedSignature.length !== receivedSignature.length ||
@@ -69,7 +69,7 @@ export const webHookCircuit = async (req: Request, res: Response) => {
             )
         ) {
             throw new Error(`Error, certificado invalido.`);
-        }
+        } */
 
         if (type === "test.send_event") {
             res.status(200).send('Webhook received test');
