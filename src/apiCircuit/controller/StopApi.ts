@@ -42,10 +42,9 @@ const statusFailed = {
 
 export const webHookCircuit = async (req: Request<{}, {}, IResponseWebhook, {}>, res: Response) => {
     const { version, created, data, type, raw } = req.body;
-    console.log('body:', req.body);
+    console.log('data:',data);
     try {
         const receivedSignature = req.get('circuit-signature');
-        console.log('receivedSignature:', receivedSignature)
         const secret = process.env.CIRCUIT_SECRET || 'abcdefghi123456789';
         const fecha = new Date();
         const day = fecha.getDate();
