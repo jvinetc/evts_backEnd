@@ -40,8 +40,8 @@ const statusFailed = {
     failed_missing_required_proof: 'failed_missing_required_proof',
 }
 
-export const webHookCircuit = async (req: Request<{}, {}, IResponseWebhook, {}>, res: Response) => {
-    const { version, created, data, type, raw } = req.body;
+export const webHookCircuit = async (req: Request, res: Response) => {
+    const { version, created, data, type } = req.body;
     console.log('data:',data);
     try {
         const receivedSignature = req.get('circuit-signature');
@@ -54,9 +54,10 @@ export const webHookCircuit = async (req: Request<{}, {}, IResponseWebhook, {}>,
         if (!receivedSignature) {
              throw new Error(`Error al obtener el certificado`);
          }
+         const message = req.body;
          const expectedSignature = crypto
              .createHmac('sha256', secret)
-             .update(raw)
+             .update(message)
              .digest('hex');
  
          if (

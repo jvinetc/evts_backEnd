@@ -130,5 +130,4 @@ export interface IResponseWebhook {
     version: string;
     created: number;
     data: IStopResponseCircuit;
-    raw: string;
 }
