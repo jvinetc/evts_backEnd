@@ -52,7 +52,7 @@ export const webHookCircuit = async (req: Request<{}, {}, IResponseWebhook, {}>,
         const month = fecha.getMonth() + 1;
         const year = fecha.getFullYear();
 
-        /*  if (!receivedSignature) {
+        if (!receivedSignature) {
              throw new Error(`Error al obtener el certificado`);
          }
          const expectedSignature = crypto
@@ -68,7 +68,7 @@ export const webHookCircuit = async (req: Request<{}, {}, IResponseWebhook, {}>,
              )
          ) {
              throw new Error(`Error, certificado invalido.`);
-         } */
+         }
 
         if (type === "test.send_event") {
             res.status(200).send('Webhook received test');
