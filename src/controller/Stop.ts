@@ -106,7 +106,7 @@ export const listStopsToMap = async (req: Request, res: Response) => {
             include: [
                 {
                     model: User,
-                    attributes: ['firstName', 'lastName', 'id']
+                    attributes: ['firstName', 'lastName', 'id', 'email']
                 }
             ]
         }
@@ -164,7 +164,7 @@ export const listStopsDelivered = async (req: Request<{}, {}, {}, FilterQuery>, 
                     include: [
                         {
                             model: User,
-                            attributes: ['firstName', 'lastName', 'id'],
+                            attributes: ['firstName', 'lastName', 'id', 'email'],
                             required: true
                         }
                     ]
@@ -195,7 +195,7 @@ export const listStopsPending = async (req: Request, res: Response) => {
             include: [
                 {
                     model: User,
-                    attributes: ['firstName', 'lastName', 'id']
+                    attributes: ['firstName', 'lastName', 'id','email']
                 }
             ]
         }
@@ -304,6 +304,7 @@ interface ExcelRow {
     referencias?: string;
     frágil?: boolean;
     devolución?: boolean;
+    cambio?:boolean;
 }
 
 const validateExcelData = (data: ExcelRow[]): ExcelRow[] => {
@@ -357,12 +358,12 @@ export const createFromExcel = async (req: Request, res: Response) => {
                 lng: lng,
                 fragile: row.frágil || false,
                 devolution: row.devolución || false,
+                exchange:row.cambio || false,
                 sellId: Number(sellId) || undefined,
                 rateId: 1
             }
         }
         ));
-        console.log(processed)
         await Stop.bulkCreate(processed as any[]);
         res.status(201).json({ message: 'Paradas creadas exitosamente' });
 
@@ -454,7 +455,7 @@ export const listStopByAdmin = async (req: Request<{}, {}, {}, FilterQuery>, res
                 include: [
                     {
                         model: User,
-                        attributes: ['firstName', 'lastName', 'id']
+                        attributes: ['firstName', 'lastName', 'id','email']
                     }
                 ]
             }

@@ -59,17 +59,17 @@ export const webHookCircuit = async (req: Request, res: Response) => {
             .createHmac('sha256', secret)
             .update(rawBuffer)
             .digest('hex');
-       /*  console.log('receivedSignature:', receivedSignature);
-        console.log('expectedSignature:', expectedSignature);
-        if (
-            expectedSignature.length !== receivedSignature.length ||
-            !crypto.timingSafeEqual(
-                Buffer.from(expectedSignature, 'hex'),
-                Buffer.from(receivedSignature, 'hex'),
-            )
-        ) {
-            throw new Error(`Error, certificado invalido.`);
-        } */
+        /*  console.log('receivedSignature:', receivedSignature);
+         console.log('expectedSignature:', expectedSignature);
+         if (
+             expectedSignature.length !== receivedSignature.length ||
+             !crypto.timingSafeEqual(
+                 Buffer.from(expectedSignature, 'hex'),
+                 Buffer.from(receivedSignature, 'hex'),
+             )
+         ) {
+             throw new Error(`Error, certificado invalido.`);
+         } */
 
         if (type === "test.send_event") {
             res.status(200).send('Webhook received test');
@@ -162,7 +162,7 @@ const getPickups = async (planId: number) => {
             attributes: ['sellId',
                 [Sequelize.fn('COUNT', Sequelize.col('Stop.id')), 'contador']
             ],
-            where: { status: 'pickUp' },
+            where: { status: 'pickUp', exchange: false },
             include: [
                 {
                     model: Sell, attributes: ['id', 'name', 'email', 'addresPickup'],
@@ -285,6 +285,69 @@ const getDelivery = async (planId: number) => {
     }
 }
 
+const getExchanges = async (planId: number) => {
+    try {
+        const stopsDelivery = await list(Stop, {
+            where: { status: 'pickUp', exchange: true },
+            include: [
+                { model: Comuna, attributes: ['name', 'id'] },
+                {
+                    model: Sell, attributes: ['id', 'name', 'email', 'addresPickup'],
+                    include: [
+                        { model: Comuna, attributes: ['name', 'id'] },
+                        { model: User, attributes: ['phone', 'email'] }
+                    ]
+                },
+                {
+                    model: Driver, attributes: ['id', 'patente'],
+                    include: [
+                        {
+                            model: User,
+                            attributes: ['id', 'email'],
+                            required: true
+                        },
+                    ]
+                }
+            ]
+        });
+
+        let addresStops: IAddressStop[] = [];
+        let stopApis: IStopApi[] = [];
+        Promise.all(stopsDelivery.map(async (stop) => {
+            const s: IStopResponse = stop.dataValues;
+            const stopAPi: IStopApi = {
+                activity: 'pickup',
+                driverIdentifier: s.Driver?.User?.email,
+                planId: planId
+            }
+
+            const sA = await insert(StopApi, stopAPi);
+            if (!sA) return false;
+
+            const addresStop: IAddressStop = {
+                addressName: `${s.addres}, ${s.Comuna?.name}`,
+                addressLineOne: s.addres,
+                addressLineTwo: s.Comuna?.name,
+                externalId: s.id?.toString(),
+                name: s.addresName,
+                latitude: s.lat,
+                longitude: s.lng,
+                phone: s.phone,
+                stopApiId: sA.id
+            }
+            const aS = await insert(AddressStop, addresStop);
+            if (!aS) return false;
+
+            addresStops.push(addresStop);
+            stopApis.push(stopAPi);
+        }))
+        return true;
+    } catch (error) {
+        console.log(error)
+        throw new Error(`Error al guardar stops delivery: ${error}`);
+    }
+}
+
 function generarTitulo({ day, month, year }: { day: number; month: number; year: number }) {
     const fecha = new Date(year, month - 1, day); // mes base 0
     const diaSemana = fecha.toLocaleDateString('es-CL', { weekday: 'short' }); // "lun"
@@ -361,12 +424,15 @@ const verifyDriver = async (driver: IDriverApi) => {
         const userR = await safeInsertUser(user);
         if (!userR) throw new Error('No se pudo obtener el usuario');
         const userId = userR.id
-        const driv: IDriver = {
-            userId: userId,
-            status: 'activo',
-            patente: DEFAULT_PATENTE
+        const existingDriver = await findOne<IDriver>(Driver, { userId: userId });
+        if (!existingDriver) {
+            const driv: IDriver = {
+                userId: userId,
+                status: 'activo',
+                patente: DEFAULT_PATENTE
+            }
+            await insert(Driver, driv);
         }
-        await insert(Driver, driv);
 
     } catch (error: any) {
         console.log(error);
@@ -398,7 +464,8 @@ export const syncApps = async (req: Request, res: Response) => {
     const estado = {
         driversSincronizados: false,
         pickups: false,
-        deliveries: false
+        deliveries: false,
+        exchange: false
     };
 
     try {
@@ -415,6 +482,7 @@ export const syncApps = async (req: Request, res: Response) => {
 
         estado.pickups = await getPickups(plan.id);
         estado.deliveries = await getDelivery(plan.id);
+        estado.exchange = await getExchanges(plan.id);
 
         if (!estado.pickups || !estado.deliveries) {
             return res.status(500).send('No se pudieron sincronizar los stops');
@@ -429,6 +497,7 @@ export const syncApps = async (req: Request, res: Response) => {
             plan: plan,
             pickups: estado.pickups,
             deliveries: estado.deliveries,
+            exchange: estado.exchange,
             driversSincronizados: estado.driversSincronizados
         });
 
@@ -439,8 +508,8 @@ export const syncApps = async (req: Request, res: Response) => {
 }
 
 export const syncDrivers = async (req: Request, res: Response) => {
-    res.status(200).json({ success: { message: 'Conductores sincronizados exitosamente' } });
-    /* const addingDrivers: IDriverApi[] = [];
+    //res.status(200).json({ success: { message: 'Conductores sincronizados exitosamente' } });
+    const addingDrivers: IDriverApi[] = [];
     try {
         const { data } = await getDrivers({});
         const drivs = await list(DriverApi);
@@ -463,7 +532,7 @@ export const syncDrivers = async (req: Request, res: Response) => {
     } catch (error: any) {
         console.error('[SYNC DRIVER ERROR]', error);
         res.status(500).json({ error: error.message });
-    } */
+    }
 }
 
 const prepareBulkStops = async (planId: number | undefined) => {
@@ -509,8 +578,8 @@ const prepareBulkStops = async (planId: number | undefined) => {
 export const createCircuitPlan = async (req: Request, res: Response) => {
     const { planId } = req.params;
     if (planId === '') return res.status(200).json({ success: { message: 'Aun no has sincronizado la app ', planId } });
-    res.status(200).json({ success: { message: 'Plan enviado a circuit exitosamente', planId } });
-    /* try {
+    //res.status(200).json({ success: { message: 'Plan enviado a circuit exitosamente', planId } });
+    try {
         const fecha = new Date();
         const day = fecha.getDate();
         const month = fecha.getMonth() + 1;
@@ -545,33 +614,33 @@ export const createCircuitPlan = async (req: Request, res: Response) => {
     } catch (error: any) {
         console.error('[CREATE PLAN ERROR]', error);
         res.status(500).json({ error: { message: error.message } });
-    } */
+    }
 }
 
 export const optmizePlan = async (req: Request, res: Response) => {
     const { planId } = req.params;
     if (planId === '') return res.status(200).json({ success: { message: 'Aun no has sincronizado la app ', planId } });
-    res.status(200).json({ success: { message: 'Paradas optimizadas con exito', planId } });
-    /* try {
+    //res.status(200).json({ success: { message: 'Paradas optimizadas con exito', planId } });
+    try {
         const { data } = await optimizePlan(planId);
         if (data.done)
             return res.status(200).json({ success: { message: 'Paradas optimizadas con exito', planId } });
     } catch (error: any) {
         console.error('[OPTMIZE PLAN ERROR]', error);
         res.status(500).json({ error: { message: error.message } });
-    } */
+    }
 }
 
 export const sendPlan = async (req: Request, res: Response) => {
     const { planId } = req.params;
     if (planId === '') return res.status(200).json({ success: { message: 'Aun no has sincronizado la app ', planId } });
-    res.status(200).json({ succes: { message: 'Paradas enviados con exito', planId } });
-    /*  try {
-         const { data } = await distributePlan(planId);
-         if (data.id !== '')
-             return res.status(200).json({ succes: { message: 'Paradas enviados con exito', planId } });
-     } catch (error: any) {
-         console.error('[SEND PLAN ERROR]', error);
-         res.status(500).json({ error: { message: error.message } });
-     } */
+    // res.status(200).json({ succes: { message: 'Paradas enviados con exito', planId } });
+    try {
+        const { data } = await distributePlan(planId);
+        if (data.id !== '')
+            return res.status(200).json({ succes: { message: 'Paradas enviados con exito', planId } });
+    } catch (error: any) {
+        console.error('[SEND PLAN ERROR]', error);
+        res.status(500).json({ error: { message: error.message } });
+    }
 }

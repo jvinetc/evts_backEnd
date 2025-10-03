@@ -2,11 +2,12 @@ import { create, update, list, byField, byFieldWithRelations, oneByFieldWithRela
 import { User, Role, Images, Sell } from "../models";
 import { Request, Response } from "express";
 import crypto from 'crypto';
-import { sendVerificationEmail } from "../util/mailer";
+import { sendRecoveryMail, sendVerificationEmail } from "../util/mailer";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import * as fs from 'fs';
-import { IUser } from "../interface/User";
+import { ICreateAdmin, IUser } from "../interface/User";
+import { ISell } from "../interface/Sell";
 
 
 
@@ -20,7 +21,7 @@ export const registerUser = async (req: Request<{}, {}, IUser, {}>, res: Respons
             user.roleId = getRol.dataValues.id;
         user.verification_token = token;
         const data = await create(User, user);
-        await sendVerificationEmail(user.email, token);
+        await sendVerificationEmail(String(user.email), token);
         res.status(201).json({ message: `Usuario registrado con exito, se envio un emial de verificacion a ${user.email}.` });
     } catch (err) {
         console.log(err);
@@ -28,17 +29,49 @@ export const registerUser = async (req: Request<{}, {}, IUser, {}>, res: Respons
     }
 }
 
-export const createUSer = async (req: Request, res: Response) => {
-    const newUser = req.body;
-    newUser.password = bcrypt.hashSync(newUser.password, 10);
-    newUser.state = 'activo';
-    const user = await create(User, newUser);
-    if (!user) {
+export const createUSer = async (req: Request<{}, {}, ICreateAdmin, {}>, res: Response) => {
+    const { addres, age, birthDate, comunaId, email, firstName, lastName, pass, phone, sellName, username } = req.body;
+    const passCrypt = bcrypt.hashSync(pass, 10);
+    const token = crypto.randomBytes(32).toString('hex');
+    const roles = await list(Role);
+    const getRol = roles.find(rol => rol.dataValues.name === "admin");
+    let roleId: number = 0;
+    let userId: number = 0;
+    if (getRol)
+        roleId = getRol.dataValues.id;
+
+    const newUser: IUser = {
+        age: Number(age),
+        birthDate,
+        email,
+        firstName,
+        lastName,
+        password: passCrypt,
+        phone,
+        username,
+        state: 'activo',
+        roleId,
+        verification_token: token,
+    }
+    const user = await create(User, newUser)
+    if (user)
+        userId = user.dataValues.id;
+    const newSell: ISell = {
+        userId,
+        comunaId: Number(comunaId),
+        addres,
+        addresPickup: addres,
+        name: sellName,
+        email,
+        state: 'activo'
+    }
+    const sell = await create(Sell, newSell);
+    if (!user || !sell) {
         res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
         return;
     }
-    const { password, ...userWithoutPass } = user.dataValues;
-    res.status(201).json(userWithoutPass);
+    sendVerificationEmail(email, token);
+    res.status(201).json({message:'admin creado con exito'});
 }
 
 export const listUsers = async (req: Request, res: Response) => {
@@ -125,11 +158,11 @@ export const updateUser = async (req: Request, res: Response) => {
         if (user.password && user.password !== '') {
             user.password = bcrypt.hashSync(user.password, 10);
             us = await update(User, { id: user.id }, user);
-        }else{
-            const {password, ...safeUSer}= user;
+        } else {
+            const { password, ...safeUSer } = user;
             us = await update(User, { id: user.id }, safeUSer);
         }
-        
+
         if (!us) {
             res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
             return;
@@ -145,3 +178,31 @@ export const updateUser = async (req: Request, res: Response) => {
         res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
     }
 }
+
+export const recoveryPass = async (req: Request, res: Response) => {
+    const { email } = req.params;
+    try {
+        let password = generateRandomPassword();
+        password = bcrypt.hashSync(password, 10);
+        const user = await update(User, { email: email }, { password: password });
+        if (!user) {
+            console.log("no existe el usuario");
+            res.status(206).json({ message: `El correo ${email} no esta registrado` });
+        }
+        sendRecoveryMail(email, password);
+        res.status(200).json({ message: `Se envio un mensaje a ${email} con los pasos a seguir` });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
+    }
+}
+
+const generateRandomPassword = (length = 12): string => {
+    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+-=[]{}|;:,.<>?';
+    let password = '';
+    for (let i = 0; i < length; i++) {
+        const randomIndex = Math.floor(Math.random() * charset.length);
+        password += charset[randomIndex];
+    }
+    return password;
+};

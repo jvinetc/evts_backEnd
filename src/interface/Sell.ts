@@ -9,7 +9,7 @@ export interface ISell {
     addres: string,
     addresPickup: string,
     state: string,
-    createAt: Date,
+    createAt?: Date,
     updateAt?: Date,
     Comuna?: IComuna;
     User?: IUser;

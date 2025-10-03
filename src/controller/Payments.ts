@@ -76,10 +76,10 @@ export const getPays = async (req: Request<{}, {}, {}, FilterQuery>, res: Respon
     }
     try {
         const { rows: payments, count } = await Payment.findAndCountAll({
-        where: filter,
-        limit: limit,
-        offset: offset,
-        order: [[field2, direction]],
+            where: filter,
+            limit: limit,
+            offset: offset,
+            order: [[field2, direction]],
             include: [
                 { model: Sell, attributes: ['name', 'id'] }
             ]
@@ -108,9 +108,32 @@ export const getPays = async (req: Request<{}, {}, {}, FilterQuery>, res: Respon
                 }
             })
         );
-        res.status(200).json({result, count});
+        res.status(200).json({ result, count });
     } catch (error) {
         res.status(500).json({ message: 'no fue cargar los datos, revisa la consola' });
         console.log(error);
     }
 }
+
+/* interface SearchQuery {
+    search?: string;
+}
+
+export const searchPaymentClient = (req: Request<{}, {}, {}, SearchQuery>, res: Response) => {
+    const { search } = req.query;
+    const { sellId } = req.params;
+    try {
+
+    } catch (error) {
+
+    }
+}
+
+const searchToOrderBuy = async (search: string, sellId: number) => {
+    let filter: WhereOptions = {};
+    if (search && search.trim()) {
+        filter[Op.or] = [
+            { buy_order: { [Op.iLike]: `${search}%` } },
+        ];
+    }
+} */

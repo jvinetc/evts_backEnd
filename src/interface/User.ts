@@ -18,3 +18,16 @@ export interface IUser {
     createAt?: Date;
     updateAt?: Date;
 }
+export interface ICreateAdmin {
+    email: string;
+    pass: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    age: string;
+    username: string;
+    birthDate: Date;
+    sellName: string;
+    addres: string;
+    comunaId: string;
+}

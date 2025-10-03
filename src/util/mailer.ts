@@ -79,3 +79,38 @@ export const sendEmailByAdmin = async (email: string, localToken: string) => {
         console.log(error);
     }
 }
+
+export const sendRecoveryMail = async (email: string, pass: string) => {
+    try {
+        const accesToken = await oAuth2Client.getAccessToken();
+        const token = accesToken.token;
+        if (!token) {
+            console.log("No se pudo obteber el token");
+            return;
+        }
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                type: "OAuth2",
+                user: process.env.EMAIL_FROM,
+                clientId: process.env.CLIENT_ID,
+                clientSecret: process.env.CLIENT_SECRET,
+                refreshToken: process.env.REFRESH_TOKEN,
+                accessToken: token
+            }
+        });
+
+        const info = await transporter.sendMail({
+            from: `Envios Todo Santiago <${process.env.EMAIL_FROM}>`,
+            to: email.toLowerCase(),
+            subject: "Recuperacion de contraseña",
+            html: `<p>Instrucciones de recuperacion:</p>
+        <p>Vuelve a tu app a iniciar session e inicia sesion con el siguiente pass</p>
+        <p><bold>${pass}</bold></p>
+        <p>Luego ve a perfil en tu app y cambiala por una de tu gusto.</p>`
+        });
+
+    } catch (error) {
+        console.log(error);
+    }
+}

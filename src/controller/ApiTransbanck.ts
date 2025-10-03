@@ -80,7 +80,7 @@ export const verifyPay = async (req: Request<{}, {}, {}, WebpayQuery>, res: Resp
             }]
         })
         if (!user)
-            return res.status(400).json({ menssage: 'No fue autorizado el pago' });
+            return res.status(400).json({ menssage: 'No se pudo cargar el usuario' });
 
         await update(Stop, { buyOrder: body.buy_order }, { status: 'pickUp' });
         const payment = await create<VerifyResponse>(Payment, body);
