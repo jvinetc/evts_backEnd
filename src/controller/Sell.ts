@@ -52,6 +52,11 @@ export const getSell = async (req: Request<{}, {}, {}, FilterQuery>, res: Respon
     const field2 = field === "creation" ? 'createAt' : field;
     let filter: WhereOptions = {};
     try {
+        const roles = await list(Role);
+        const getRol = roles.find(rol => rol.dataValues.name === "client");
+        let roleId;
+        if (getRol)
+            roleId = getRol.dataValues.id;
         if (search && search.trim()) {
             filter[Op.or] = [
                 { name: { [Op.iLike]: `${search}%` } },
@@ -70,7 +75,8 @@ export const getSell = async (req: Request<{}, {}, {}, FilterQuery>, res: Respon
                 {
                     model: User,
                     attributes: ['firstName', 'lastName', 'id', 'phone'],
-                    required: true
+                    required: true,
+                    where: { roleId: roleId }
                 }
             ]
         });
@@ -137,7 +143,7 @@ export const createSellAdmin = async (req: Request<{}, {}, BodyCreate, {}>, res:
         sell.userId = u?.dataValues.id;
         sell.state = 'activo';
         const s = create(Sell, sell);
-        await sendEmailByAdmin(user.email, token);
+        await sendEmailByAdmin(String(user.email), token);
         res.status(201).json({ u, s });
     } catch (error) {
         console.log(error);
