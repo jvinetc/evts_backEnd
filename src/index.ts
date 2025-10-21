@@ -21,13 +21,13 @@ import { httpServer, app } from './util/createSocket';
 //importaciones router circuit
 import circuitRouter from './apiCircuit/router/index';
 
-sequelize.sync({ alter: true })
+/*sequelize.sync({ alter: true })
   .then(() => {
     console.log('📦 Todas las tablas fueron sincronizadas correctamente.');
   })
   .catch(error => {
     console.error('❌ Error al sincronizar tablas:', error);
-  });
+  });*/
 
 //const app = express();
 
