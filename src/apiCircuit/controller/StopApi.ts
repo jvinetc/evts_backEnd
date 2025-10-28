@@ -564,7 +564,6 @@ const prepareBulkStops = async (planId: number | undefined) => {
                     externalId: stopApi.AddressStop?.externalId
                 },
                 allowedDrivers: driver?.id_router_api ? [String(driver.id_router_api)] : [],
-                driver: stopApi.driverIdentifier,
                 activity: stopApi.activity,
                 packageCount: stopApi.packageCount
 
