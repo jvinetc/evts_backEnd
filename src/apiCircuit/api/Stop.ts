@@ -1,6 +1,6 @@
 import api from './axios';
 import { IStopApi } from '../interface';
-import { IResponseBulk, IStopCreate, IStopResponse, IStopsResponse } from '../interface/Stop';
+import { IResponseBulk, IStopCreate, IStopsResponse } from '../interface/Stop';
 
 export const getStops = ({ pageToken, maxPageSize, planId, externalId }: 
     { pageToken?: string, maxPageSize?: number, planId: string, externalId?: string }) => {
