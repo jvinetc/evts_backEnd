@@ -28,9 +28,9 @@ export const deletePlan = (planId: string) =>{
 }
 
 export const optimizePlan = (planId: string) =>{
-    return api.post<IResponseOptimizePlan>(`/${planId}:optimize`);
+    return api.post<IResponseOptimizePlan>(`/${planId}:optimize`, {});
 }
 
 export const distributePlan = (planId: string) =>{
-    return api.post<IResponseCreatePlan>(`/${planId}:distribute`);
+    return api.post<IResponseCreatePlan>(`/${planId}:distribute`, {});
 }   

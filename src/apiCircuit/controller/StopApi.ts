@@ -563,8 +563,7 @@ const prepareBulkStops = async (planId: number | undefined) => {
                     phone: stopApi.AddressStop?.phone,
                     externalId: stopApi.AddressStop?.externalId
                 },
-                allowedDrivers: [driver?.id_router_api ?? ''],
-                driver: stopApi.driverIdentifier,
+                allowedDrivers: driver?.id_router_api ? [String(driver.id_router_api)] : [],
                 activity: stopApi.activity,
                 packageCount: stopApi.packageCount
 
@@ -621,8 +620,14 @@ export const optmizePlan = async (req: Request, res: Response) => {
     const { planId } = req.params;
     if (planId === '') return res.status(200).json({ success: { message: 'Aun no has sincronizado la app ', planId } });
     //res.status(200).json({ success: { message: 'Paradas optimizadas con exito', planId } });
+    
     try {
-        const { data } = await optimizePlan(planId);
+        const plan = await findOne<IPlan>(Plan, { id: planId });
+        if (!plan || !plan.id_router_api) {
+            return res.status(400).json({ error: { message: 'El plan no existe o no ha sido sincronizado' } });
+        }
+        console.log('Optimizando plan en Circuit, id:', plan.id_router_api);
+        const { data } = await optimizePlan(plan.id_router_api);
         if (data.done)
             return res.status(200).json({ success: { message: 'Paradas optimizadas con exito', planId } });
     } catch (error: any) {
