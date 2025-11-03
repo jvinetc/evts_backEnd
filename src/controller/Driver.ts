@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { Driver, Comuna, User, Stop, PickUp } from "../models";
+import { Driver, Comuna, User, Stop, PickUp, Failed } from "../models";
 import { create, update, list, byField, byFieldWithRelations, oneByFieldWithRelations, listWithRelations } from "./crudController";
 import { IDriver, StatsDriver } from "../interface/Driver";
 import { Op, Sequelize, WhereOptions } from "sequelize";
@@ -209,9 +209,9 @@ const getStatsDriverById = async (driverId: number): Promise<StatsDriver> => {
     }) as { value: string | number | null } | null;
     stats.historicalDelivery = stopsDelivered?.value ? Number(stopsDelivered.value) : 0;
 
-    const stopsFailed = await Stop.findOne({
+    const stopsFailed = await Failed.findOne({
       attributes: [[Sequelize.fn('COUNT', Sequelize.col('id')), 'value']],
-      where: { driverId, status: 'failed' },
+      where: { driverId },
       raw: true
     }) as { value: string | number | null } | null;
     stats.historicalFailed = stopsFailed?.value ? Number(stopsFailed.value) : 0;
@@ -238,12 +238,11 @@ const getStatsDriverById = async (driverId: number): Promise<StatsDriver> => {
     }) as { value: string | number | null } | null;
     stats.monthDelivery = monthDelivered?.value ? Number(monthDelivered.value) : 0;
 
-    const monthFailed = await Stop.findOne({
+    const monthFailed = await Failed.findOne({
       attributes: [[Sequelize.fn('COUNT', Sequelize.col('id')), 'value']],
       where: {
         driverId,
-        status: 'failed',
-        updateAt: {
+        failedDate: {
           [Sequelize.Op.gte]: startOfMonth,
           [Sequelize.Op.lt]: endOfMonth
         }
