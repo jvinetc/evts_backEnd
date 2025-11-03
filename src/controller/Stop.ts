@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { Stop } from "../models/Stop";
 import { create, update, list, byField, byFieldWithRelations, remove, listWithRelations, oneByFieldWithRelations } from "./crudController";
 import { model } from "mongoose";
-import { Comuna, Rate, Sell, Payment, Driver, User } from "../models";
+import { Comuna, Rate, Sell, Payment, Driver, User, Failed } from "../models";
 import { formatResponse } from '../util/util'
 import { IStop } from "../interface/Stop";
 import xlsx from 'xlsx';
@@ -14,6 +14,7 @@ import dayjs from "dayjs";
 import { Op } from "sequelize";
 import { IDriver } from "../interface/Driver";
 import { createNotification, sendPushNotification } from "./Notification";
+import { ISell } from "../interface/Sell";
 const baseUrl = process.env.BASE_URL || '';
 
 export const createStop = async (req: Request, res: Response) => {
@@ -179,6 +180,32 @@ export const listStopsDelivered = async (req: Request<{}, {}, {}, FilterQuery>, 
     }
 
 }
+export const listStopsFailed = async (req: Request, res: Response) => {
+    const stops = await listWithRelations(Stop, { where: { status: 'failed' } }, [
+        { model: Comuna, attributes: ['name', 'id'] },
+        { model: Rate, attributes: ['id', 'nameService', 'price'] },
+        {
+            model: Sell, attributes: ['id', 'name', 'email', 'addresPickup'],
+            include: [
+                { model: Comuna, attributes: ['name', 'id'] }
+            ]
+        },
+        {
+            model: Driver, attributes: ['id', 'userId', 'patente'],
+            include: [
+                {
+                    model: User,
+                    attributes: ['firstName', 'lastName', 'id', 'email']
+                }
+            ]
+        }
+    ]);
+    if (!stops) {
+        res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
+        return;
+    }
+    res.status(201).json(stops);
+}
 
 export const listStopsPending = async (req: Request, res: Response) => {
     const stops = await listWithRelations(Stop, { where: { status: 'to_be_paid' } }, [
@@ -195,7 +222,7 @@ export const listStopsPending = async (req: Request, res: Response) => {
             include: [
                 {
                     model: User,
-                    attributes: ['firstName', 'lastName', 'id','email']
+                    attributes: ['firstName', 'lastName', 'id', 'email']
                 }
             ]
         }
@@ -304,7 +331,7 @@ interface ExcelRow {
     referencias?: string;
     frágil?: boolean;
     devolución?: boolean;
-    cambio?:boolean;
+    cambio?: boolean;
 }
 
 const validateExcelData = (data: ExcelRow[]): ExcelRow[] => {
@@ -358,7 +385,7 @@ export const createFromExcel = async (req: Request, res: Response) => {
                 lng: lng,
                 fragile: row.frágil || false,
                 devolution: row.devolución || false,
-                exchange:row.cambio || false,
+                exchange: row.cambio || false,
                 sellId: Number(sellId) || undefined,
                 rateId: 1
             }
@@ -455,7 +482,7 @@ export const listStopByAdmin = async (req: Request<{}, {}, {}, FilterQuery>, res
                 include: [
                     {
                         model: User,
-                        attributes: ['firstName', 'lastName', 'id','email']
+                        attributes: ['firstName', 'lastName', 'id', 'email']
                     }
                 ]
             }
@@ -523,4 +550,41 @@ export const asignDriversToStops = async (req: Request, res: Response) => {
         console.log(error);
     }
 
+}
+
+
+export const reDispatch = async (req: Request, res: Response) => {
+    const { stop }: { stop: IStop } = req.body;
+    try {
+        await update(Stop, { id: Number(stop.id) }, { status: 'delivery', driverId: null });
+        await update(Failed, { stopId: Number(stop.id) }, { action: 're-dispatch', updateAt: new Date() });
+        res.status(200).json({ message: 'Reasignado para re-despacho' });
+    } catch (error) {
+        res.status(500).json({ message: error });
+        console.log(error);
+    }
+}
+
+export const returnToShop = async (req: Request, res: Response) => {
+    const { stop }: { stop: IStop } = req.body;
+    try {
+        const sell = await oneByFieldWithRelations<ISell>(Sell, { id: stop.sellId },[
+            {model: User, attributes: ['firstName', 'id', 'phone'] }
+        ]);
+        if (!sell) {
+            res.status(400).json({ message: 'No se encontro la venta asociada a la parada' });
+            return;
+        }
+        await update(Stop, { id: Number(stop.id) }, {
+            status: 'delivery', driverId: null, addres: sell?.addresPickup,
+            comunaId: sell.comunaId, lat: sell?.lat, lng: sell?.lng,
+            addresName: `${sell.name}- ${sell.User?.firstName}`, phone: sell.User?.phone, 
+            notes: 'Devolución a la tienda', updateAt: new Date()
+        });
+        await update(Failed, { stopId: Number(stop.id) }, { action: 'return_to_shop', updateAt: new Date() });
+        res.status(200).json({ message: 'Devuelto a la tienda' })
+    } catch (error) {
+        res.status(500).json({ message: error });
+        console.log(error);
+    }
 }

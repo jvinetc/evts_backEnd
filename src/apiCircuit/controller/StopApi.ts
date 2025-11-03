@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { createBulkStops, getStops } from "../api/Stop";
 import { list, oneByFieldWithRelations } from "../../controller/crudController";
-import { Comuna, Driver, PickUp, Sell, Stop, User } from "../../models";
+import { Comuna, Driver, Failed, PickUp, Sell, Stop, User } from "../../models";
 import { Op, Sequelize } from "sequelize";
 import { IAddressStop, IDeliveryInfo, IDriverApi, IPlan, IStopApi } from "../interface";
 import { createDriver, getDrivers } from "../api/Driver";
@@ -77,6 +77,9 @@ export const webHookCircuit = async (req: Request, res: Response) => {
             return;
         } else if (type === "stop.attempted_delivery") {
             const stop: IStopResponseCircuit = data;
+            const driver = await findOne<IDriver>(Driver, {}, {
+                include: [{ model: User, attributes: [], where: { email: stop.driverIdentifier } }]
+            });
             if (!stop) throw new Error(`Error, el cuerpo de la solicitud esta vacio.`);
             const stopApi = await findOne<IStopApi>(StopApi, {}, {
                 include: [
@@ -96,17 +99,30 @@ export const webHookCircuit = async (req: Request, res: Response) => {
             const deliveryInfo = await insert(DeliveryInfo, devInfo);
             if (!deliveryInfo) throw new Error(`Error, no fue posible grabar la informacion de la entrega`);
             if (Object.values(statusFailed).includes((String(stop.deliveryInfo?.state)))) {
+                const stops = await findOne<IStop>(Stop, { id: stop.recipient?.externalId, driverId: driver?.id });
                 await update(Stop, Number(stop.recipient?.externalId), {
                     status: 'failed',
                     evidence: stop.deliveryInfo?.photoUrls,
-                    pickupDate: `${year}-${month}-${day}`
+                    updateAt: `${year}-${month}-${day}`
                 })
+                await insert(Failed, {
+                    stopId: Number(stop.recipient?.externalId), 
+                    sellId: stops?.sellId,
+                    driverId: driver?.id,
+                    addressName: stops?.addresName ,
+                    addressStop: stops?.addres,
+                    comunaId: stops?.comunaId,
+                    phone: stops?.phone,
+                    notes: stops?.notes,
+                    failedDate: `${year}-${month}-${day}`,
+                    evidence: stop.deliveryInfo?.photoUrls,
+                });
             }
             if (Object.values(statusPickup).includes((String(stop.deliveryInfo?.state)))) {
-                const stops = await find<IStop>(Stop, { status: 'pickUp', sellId: stop.recipient?.externalId });
+                const stops = await find<IStop>(Stop, { status: 'pickUp', sellId: stop.recipient?.externalId, driverId: driver?.id });
                 const pickUp: IPickUp = {
                     sellId: stop.recipient?.externalId,
-                    driverId: stops[0].driverId,
+                    driverId: driver?.id,
                     pickuDate: `${year}-${month}-${day}`,
                     evidence: stop.deliveryInfo?.photoUrls,
                 }
@@ -620,7 +636,7 @@ export const optmizePlan = async (req: Request, res: Response) => {
     const { planId } = req.params;
     if (planId === '') return res.status(200).json({ success: { message: 'Aun no has sincronizado la app ', planId } });
     //res.status(200).json({ success: { message: 'Paradas optimizadas con exito', planId } });
-    
+
     try {
         const plan = await findOne<IPlan>(Plan, { id: planId });
         if (!plan || !plan.id_router_api) {

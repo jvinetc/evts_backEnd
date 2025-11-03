@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
-import { Driver, Comuna, User, Stop } from "../models";
+import { Driver, Comuna, User, Stop, PickUp } from "../models";
 import { create, update, list, byField, byFieldWithRelations, oneByFieldWithRelations, listWithRelations } from "./crudController";
-import { IDriver } from "../interface/Driver";
+import { IDriver, StatsDriver } from "../interface/Driver";
 import { Op, Sequelize, WhereOptions } from "sequelize";
 import { IUser } from "../interface/User";
 import * as fs from 'fs';
@@ -57,11 +57,14 @@ export const updateDriver = async (req: Request, res: Response) => {
         const driverR = await byField(Driver, { id: id });
         const driv = driverR?.dataValues;
         if (driver) {
-            await update(Driver, { id: driver.id }, driver);
+            /* await update(Driver, { id: driver.id }, driver); */
             const comunaId = driver.Comunas?.map(c => Number(c.id));
             await driverR?.setComunas(comunaId);
         }
         // Licencia de conducir
+        if (driver.patente) {
+            driv.patente = driver.patente;
+        }
         if (files.file1 && expiration1) {
             cloudinary.uploader.destroy(driv.liceciaConducir);
             driv.liceciaConducir = files.file1[0].filename;
@@ -162,20 +165,113 @@ export const getDrivers = async (req: Request<{}, {}, {}, FilterQuery>, res: Res
             where: filter,
             limit: limit,
             offset: offset,
-            distinct:true,
+            distinct: true,
             order: [[field2, direction]],
             include: [
-                { model: User, attributes: ['firstName', 'lastName', 'id'], required: !!search },
+                { model: User, attributes: ['firstName', 'lastName', 'id', 'email'], required: !!search },
                 { model: Comuna, attributes: ['name', 'id'], required: !!comunaId },
             ]
         });
 
-        res.json({ drivers, count });
+        const stats: StatsDriver[] = [];
+        for (const driver of drivers) {
+            const driverStats = await getStatsDriverById(driver.dataValues.id!);
+            stats.push(driverStats);
+        }
+
+        res.json({ drivers, count, stats });
     } catch (error) {
         console.log(error);
         res.status(500).json({ error });
     }
 }
+
+const getStatsDriverById = async (driverId: number): Promise<StatsDriver> => {
+  try {
+    const stats: StatsDriver = {
+      monthDelivery: 0,
+      monthPickup: 0,
+      monthFailed: 0,
+      historicalDelivery: 0,
+      historicalPickup: 0,
+      historicalFailed: 0
+    };
+
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+
+    /* HISTÓRICO */
+    const stopsDelivered = await Stop.findOne({
+      attributes: [[Sequelize.fn('COUNT', Sequelize.col('id')), 'value']],
+      where: { driverId, status: 'delivered' },
+      raw: true
+    }) as { value: string | number | null } | null;
+    stats.historicalDelivery = stopsDelivered?.value ? Number(stopsDelivered.value) : 0;
+
+    const stopsFailed = await Stop.findOne({
+      attributes: [[Sequelize.fn('COUNT', Sequelize.col('id')), 'value']],
+      where: { driverId, status: 'failed' },
+      raw: true
+    }) as { value: string | number | null } | null;
+    stats.historicalFailed = stopsFailed?.value ? Number(stopsFailed.value) : 0;
+
+    const stopsPickups = await PickUp.findOne({
+      attributes: [[Sequelize.fn('COUNT', Sequelize.col('id')), 'value']],
+      where: { driverId },
+      raw: true
+    }) as { value: string | number | null } | null;
+    stats.historicalPickup = stopsPickups?.value ? Number(stopsPickups.value) : 0;
+
+    /* MENSUAL */
+    const monthDelivered = await Stop.findOne({
+      attributes: [[Sequelize.fn('COUNT', Sequelize.col('id')), 'value']],
+      where: {
+        driverId,
+        status: 'delivered',
+        updateAt: {
+          [Sequelize.Op.gte]: startOfMonth,
+          [Sequelize.Op.lt]: endOfMonth
+        }
+      },
+      raw: true
+    }) as { value: string | number | null } | null;
+    stats.monthDelivery = monthDelivered?.value ? Number(monthDelivered.value) : 0;
+
+    const monthFailed = await Stop.findOne({
+      attributes: [[Sequelize.fn('COUNT', Sequelize.col('id')), 'value']],
+      where: {
+        driverId,
+        status: 'failed',
+        updateAt: {
+          [Sequelize.Op.gte]: startOfMonth,
+          [Sequelize.Op.lt]: endOfMonth
+        }
+      },
+      raw: true
+    }) as { value: string | number | null } | null;
+    stats.monthFailed = monthFailed?.value ? Number(monthFailed.value) : 0;
+
+    const monthPickup = await PickUp.findOne({
+      attributes: [[Sequelize.fn('COUNT', Sequelize.col('id')), 'value']],
+      where: {
+        driverId,
+        createAt: {
+          [Sequelize.Op.gte]: startOfMonth,
+          [Sequelize.Op.lt]: endOfMonth
+        }
+      },
+      raw: true
+    }) as { value: string | number | null } | null;
+    stats.monthPickup = monthPickup?.value ? Number(monthPickup.value) : 0;
+
+    return stats;
+  } catch (error) {
+    console.log(error);
+    throw new Error('Error fetching driver stats');
+  }
+};
+
 
 export const getDriverById = async (req: Request, res: Response) => {
     const { id } = req.params;

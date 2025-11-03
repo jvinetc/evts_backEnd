@@ -20,3 +20,12 @@ export interface IDriver {
     Comunas?: IComuna[];
     User?:IUser;
 }
+
+export interface StatsDriver {
+    monthDelivery: number;
+    monthPickup: number;
+    monthFailed: number;
+    historicalDelivery: number;
+    historicalPickup: number;
+    historicalFailed: number;
+}

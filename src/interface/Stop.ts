@@ -25,6 +25,7 @@ export interface IStop {
   deliveryDate?: string;
   createAt?: Date,
   updateAt?: Date,
+  Sell?: ISell;
 }
 
 export interface IStopResponse {

@@ -8,6 +8,7 @@ export const Sell = sequelize.define('Sell', {
   addresPickup: { type: DataTypes.STRING, allowNull: false },
   comunaId: { type: DataTypes.INTEGER, allowNull: false },
   state: { type: DataTypes.STRING, allowNull: false },
+  reference: { type: DataTypes.STRING, allowNull: true },
   userId: { type: DataTypes.INTEGER, allowNull: false },
   lat: { type: DataTypes.DOUBLE },
   lng: { type: DataTypes.DOUBLE },

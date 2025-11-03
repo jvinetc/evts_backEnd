@@ -54,7 +54,7 @@ export const createSellMiddleware = async (req: Request, res: Response, next: Ne
             addresPickup,
             state: 'activo',
             lat,
-            lng, 
+            lng,
             email
         };
 
@@ -70,7 +70,7 @@ export const updateSellMiddleware = async (req: Request, res: Response, next: Ne
     const date = new Date();
     const Authorization = req.header("Authorization");
     const token = Authorization ? Authorization.split("Bearer ")[1] : false;
-    const { id, name, userId, comunaId, addres, addresPickup, lat, lng } = req.body;
+    const { id, name, userId, comunaId, addres, addresPickup, lat, lng, reference } = req.body;
     const url = req.url;
 
     console.log(
@@ -116,9 +116,10 @@ export const updateSellMiddleware = async (req: Request, res: Response, next: Ne
             comunaId,
             addres,
             addresPickup,
-            updateAt: date, 
-            lat, 
-            lng
+            updateAt: date,
+            lat,
+            lng,
+            reference
         };
 
         next();

@@ -10,6 +10,7 @@ import { Images } from "./Images";
 import { Payment } from "./Payment";
 import { Notification } from "./Notification";
 import { PickUp } from "./PickUp";
+import { Failed } from "./Failed";
 
 // User ↔ Role
 Role.hasMany(User, { foreignKey: 'roleId' });
@@ -57,13 +58,24 @@ Stop.belongsTo(Rate, { foreignKey: 'rateId' });
 User.hasMany(Notification, { foreignKey: 'userId' });
 Notification.belongsTo(User, { foreignKey: 'userId' });
 
-PickUp.belongsTo(Sell, {foreignKey:'sellId'});
-PickUp.belongsTo(Driver, {foreignKey:'driverId'});
-PickUp.belongsTo(Stop, {foreignKey:'stopId'});
-Sell.hasMany(PickUp, {foreignKey:'sellId'});
-Driver.hasMany(PickUp, {foreignKey:'driverId'});
-Stop.hasMany(PickUp, {foreignKey:'stopId'});
+PickUp.belongsTo(Sell, { foreignKey: 'sellId' });
+PickUp.belongsTo(Driver, { foreignKey: 'driverId' });
+PickUp.belongsTo(Stop, { foreignKey: 'stopId' });
+Sell.hasMany(PickUp, { foreignKey: 'sellId' });
+Driver.hasMany(PickUp, { foreignKey: 'driverId' });
+Stop.hasMany(PickUp, { foreignKey: 'stopId' });
+
+// Failed ↔ Sell, Driver, Stop
+Failed.belongsTo(Sell, { foreignKey: 'sellId' });
+Failed.belongsTo(Driver, { foreignKey: 'driverId' });
+Failed.belongsTo(Stop, { foreignKey: 'stopId' });
+Failed.belongsTo(Comuna, { foreignKey: 'comunaId' });
+
+Sell.hasMany(Failed, { foreignKey: 'sellId' });
+Driver.hasMany(Failed, { foreignKey: 'driverId' });
+Stop.hasMany(Failed, { foreignKey: 'stopId' });
+Comuna.hasMany(Failed, { foreignKey: 'comunaId' });
 
 // 👇 agregar las tablas
 
-export { sequelize, User, Role, Comuna, Sell, Driver, Stop, Rate, Images, Payment, PickUp, Notification };
+export { sequelize, User, Role, Comuna, Sell, Driver, Stop, Rate, Images, Payment, PickUp, Notification, Failed };

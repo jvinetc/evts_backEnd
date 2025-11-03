@@ -15,6 +15,7 @@ export interface ISell {
     User?: IUser;
     lat?: number,
     lng?: number,
-    email?:string;
+    email?: string;
+    reference?: string;
 
 }

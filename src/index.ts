@@ -12,6 +12,7 @@ import autoRouter from './routes/AddresApi';
 import banckRouter from './routes/ApiTransBanck';
 import payRouter from './routes/Payment';
 import pickUpRouter from './routes/PickUp';
+import failedRouter from './routes/Failed';
 import notificationRouter from './routes/Notification';
 import bodyParser from 'body-parser';
 import { genAuthUrl } from "./util/generateAuthorizationUrl";
@@ -21,13 +22,13 @@ import { httpServer, app } from './util/createSocket';
 //importaciones router circuit
 import circuitRouter from './apiCircuit/router/index';
 
-/*sequelize.sync({ alter: true })
+sequelize.sync({ alter: true })
   .then(() => {
     console.log('📦 Todas las tablas fueron sincronizadas correctamente.');
   })
   .catch(error => {
     console.error('❌ Error al sincronizar tablas:', error);
-  });*/
+  });
 
 //const app = express();
 
@@ -74,6 +75,7 @@ app.use('/autocomplete', autoRouter);
 app.use('/pay', payRouter);
 app.use('/payments', banckRouter);
 app.use('/pickUp', pickUpRouter);
+app.use('/failed', failedRouter);
 app.use('/notification', notificationRouter);
 app.use('/circuit', circuitRouter);
 app.use(`/uploads`, express.static("uploads"));
