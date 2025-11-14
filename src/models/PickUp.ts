@@ -5,10 +5,12 @@ export const PickUp = sequelize.define('PickUp', {
     sellId: { type: DataTypes.INTEGER, allowNull: true },
     driverId: { type: DataTypes.INTEGER, allowNull: true },
     stopId: { type: DataTypes.INTEGER, allowNull: true },
-    pickuDate:{type:DataTypes.DATEONLY, allowNull:true},
+    stopsId: { type: DataTypes.ARRAY(DataTypes.INTEGER), allowNull: true },
+    pickuDate: { type: DataTypes.DATEONLY, allowNull: true },
     createAt: { type: DataTypes.DATE, defaultValue: DataTypes.NOW },
     updateAt: { type: DataTypes.DATE },
-    evidence: {type: DataTypes.ARRAY(DataTypes.STRING), allowNull:true},
+    evidence: { type: DataTypes.ARRAY(DataTypes.STRING), allowNull: true },
+    userId: { type: DataTypes.INTEGER, allowNull: true }
 }, {
     tableName: 'pickups',
     timestamps: false

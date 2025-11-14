@@ -15,6 +15,8 @@ export interface IStop {
   sellId?: number,
   driverId?: number,
   rateId?: number,
+  ratesIds?: number[],
+  totalStop?: number,
   lat?: number,
   lng?: number,
   fragile?: boolean,

@@ -54,15 +54,35 @@ export const getPickUp = async (req: Request<{}, {}, {}, FilterQuery>, res: Resp
             }, {
                 model: Stop,
                 attributes: ['addresName', 'addres', 'buyOrder', 'status', 'phone'],
-                required: true,
                 include: [{ model: Comuna, attributes: ['name'] }]
-            }]
+            },
+            { model: User, attributes: ['firstName', 'lastName'] }]
         });
         if (!pickUp) {
             res.status(500).json({ message: 'error al cargar los datos' })
             return;
         }
-        res.status(200).json({ count, pickUp });
+        const response = await Promise.all(
+            pickUp.map(async (pick) => {
+                const stops = pick.dataValues.stopsId
+                    ? await Promise.all(
+                        pick.dataValues.stopsId.map(async (stopId: number) => {
+                            return await Stop.findByPk(stopId, {
+                                include: [{ model: Comuna, attributes: ['name'] }]
+                            });
+                        })
+                    )
+                    : [];
+
+                return {
+                    pickUp: pick.dataValues,
+                    stops: stops.filter(Boolean) // elimina nulls si algún stop no se encuentra
+                };
+            })
+        );
+
+        res.status(200).json({ count, response });
+
     } catch (error) {
         console.log(error);
         res.status(500).json({ message: 'error al cargar los datos' })
@@ -92,4 +112,36 @@ export const chartsPickUpDriver = async (req: Request, res: Response) => {
         value
     }));
     res.status(200).json(datosLimpios);
+}
+
+export const chartsPickUpDay = async (req: Request, res: Response) => {
+    const payments = await list(PickUp, {
+        attributes: [
+            [Sequelize.fn('COUNT', Sequelize.col('id')), 'value'], // Conteo de IDs
+            [Sequelize.literal(`"createAt"::date`), 'label']
+        ],
+        group: [Sequelize.literal(`"createAt"::date`)],
+        raw: true, // Devuelve resultados como objetos planos
+
+    });
+    if (!payments) {
+        res.status(500).json({ message: 'no fue posible cargar los datos, revisa la consola' })
+        return;
+    }
+    const datosLimpios = payments.map(({ label, value }) => ({
+        label,
+        value
+    }));
+    res.status(200).json(datosLimpios);
+}
+
+export const countPickUps = async (req: Request, res: Response) => {
+    try {
+        const count = await PickUp.count();
+        res.status(200).json({ count });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'no fue posible cargar los datos, revisa la consola' })
+    }
+
 }

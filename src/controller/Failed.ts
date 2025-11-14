@@ -86,3 +86,14 @@ export const chartsFailedDriver = async (req: Request, res: Response) => {
     }));
     res.status(200).json(datosLimpios);
 }
+
+export const countFailed = async (req: Request, res: Response) => {
+    try {
+        const count = await Failed.count();
+        res.status(200).json({ count });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'no fue posible cargar los datos, revisa la consola' })
+    }
+
+}

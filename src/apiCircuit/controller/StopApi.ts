@@ -16,6 +16,7 @@ import { createPlan, distributePlan, optimizePlan } from "../api/Plan";
 import crypto from 'crypto';
 import { IStop, IStopResponse } from "../../interface/Stop";
 import { IPickUp } from "../../interface/PickUp";
+import { createNotification, sendPushNotification } from "../../controller/Notification";
 
 const statusPickup = {
     picked_up_from_customer: 'picked_up_from_customer',
@@ -106,10 +107,10 @@ export const webHookCircuit = async (req: Request, res: Response) => {
                     updateAt: `${year}-${month}-${day}`
                 })
                 await insert(Failed, {
-                    stopId: Number(stop.recipient?.externalId), 
+                    stopId: Number(stop.recipient?.externalId),
                     sellId: stops?.sellId,
                     driverId: driver?.id,
-                    addressName: stops?.addresName ,
+                    addressName: stops?.addresName,
                     addressStop: stops?.addres,
                     comunaId: stops?.comunaId,
                     phone: stops?.phone,
@@ -120,14 +121,9 @@ export const webHookCircuit = async (req: Request, res: Response) => {
             }
             if (Object.values(statusPickup).includes((String(stop.deliveryInfo?.state)))) {
                 const stops = await find<IStop>(Stop, { status: 'pickUp', sellId: stop.recipient?.externalId, driverId: driver?.id });
-                const pickUp: IPickUp = {
-                    sellId: stop.recipient?.externalId,
-                    driverId: driver?.id,
-                    pickuDate: `${year}-${month}-${day}`,
-                    evidence: stop.deliveryInfo?.photoUrls,
-                }
-                await insert(PickUp, pickUp);
+                let stopsId: number[] = [];
                 await Promise.all(stops.map(async (stp) => {
+                    stopsId.push(Number(stp.id));
                     await update(Stop, Number(stp.id), {
                         status: 'delivery',
                         evidence: stop.deliveryInfo?.photoUrls,
@@ -135,14 +131,44 @@ export const webHookCircuit = async (req: Request, res: Response) => {
                         pickupDate: `${year}-${month}-${day}`
                     });
                 }));
+                const pickUp: IPickUp = {
+                    sellId: stop.recipient?.externalId,
+                    driverId: driver?.id,
+                    pickuDate: `${year}-${month}-${day}`,
+                    evidence: stop.deliveryInfo?.photoUrls,
+                    stopsId: stopsId
+                }
+                await insert(PickUp, pickUp);
 
             }
             if (Object.values(statusDelivery).includes((String(stop.deliveryInfo?.state)))) {
+                const stops = await findOne<IStop>(Stop, { id: stop.recipient?.externalId, driverId: driver?.id });
                 await update(Stop, Number(stop.recipient?.externalId), {
                     status: 'delivered',
                     evidence: stop.deliveryInfo?.photoUrls,
                     deliveryDate: `${year}-${month}-${day}`
                 })
+                const user = await User.findOne({ include: [{ model: Sell, where: { id: stops?.sellId } }] });
+                if (user) {
+                    await sendPushNotification(user.dataValues.expoPushToken, 'Envio entregado',
+                        `Punto entregado satisfactoriamente a: ${stops?.addresName}. `);
+                    await createNotification({
+                        title: 'Envio entregado',
+                        message: `Punto entregado satisfactoriamente a: ${stops?.addresName}. `,
+                        type: 'admin',
+                        sellId: Number(stops?.sellId),
+                        userId: user.dataValues.id
+                    });
+                    await createNotification({
+                        title: 'Pago realizado',
+                        message: `Punto entregado satisfactoriamente a: ${stops?.addresName}.`,
+                        type: 'client',
+                        sellId: Number(stops?.sellId),
+                        userId: user.dataValues.id
+                    });
+                }
+
+
             }
             await update(StopApi, Number(stopApi?.id), { id_router_api: stop.id })
             console.log('registro actualizado correctamente')

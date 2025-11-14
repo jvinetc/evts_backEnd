@@ -1,5 +1,5 @@
 import { create, update, list, byField, byFieldWithRelations, oneByFieldWithRelations } from "./crudController";
-import { User, Role, Images, Sell } from "../models";
+import { User, Role, Images, Sell, Comuna } from "../models";
 import { Request, Response } from "express";
 import crypto from 'crypto';
 import { sendRecoveryMail, sendVerificationEmail } from "../util/mailer";
@@ -96,7 +96,9 @@ export const login = async (req: Request, res: Response) => {
         const user = await oneByFieldWithRelations(User, { email: email }, [
             { model: Role, attributes: ['name'] },
             { model: Images, attributes: ['name', 'url'] },
-            { model: Sell, attributes: ['id', 'addresPickup', 'name', 'email', 'addres'] }
+            { model: Sell, 
+                attributes: ['id', 'addresPickup', 'name', 'email', 'addres','reference'],
+                include:[{model:Comuna, attributes:['name', 'id'] }] }
         ])
         if (!user) {
             return res.status(400).json({ message: "Usuario inexistente" });

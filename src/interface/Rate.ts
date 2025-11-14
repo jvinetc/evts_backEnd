@@ -1,3 +1,4 @@
+import { IRateAddition } from "./RateAddition"
 
 export interface IRate {
     id?: number,
@@ -6,4 +7,7 @@ export interface IRate {
     state:string,
     createAt: Date,
     updateAt?: Date,
+    isBase?: boolean,
+    type?: string
+    RateAdditions?: IRateAddition[]
 }

@@ -15,19 +15,55 @@ import { Op } from "sequelize";
 import { IDriver } from "../interface/Driver";
 import { createNotification, sendPushNotification } from "./Notification";
 import { ISell } from "../interface/Sell";
+import { IRate } from "../interface/Rate";
 const baseUrl = process.env.BASE_URL || '';
 
 export const createStop = async (req: Request, res: Response) => {
-    const stop = await create(Stop, req.body);
+    const {
+        addresName,
+        addres,
+        comunaId,
+        notes,
+        sellId,
+        phone,
+        lat,
+        lng,
+        fragile,
+        devolution,
+        exchange,
+        selectedRates,
+    } = req.body;
+    const selectedR: IRate[] = selectedRates || [];
+
+    const totalStop = selectedR.reduce((acc, rate) => acc + Number(rate.price), 0);
+    const rateIds: number[] = selectedR
+        .map(rate => rate.id)
+        .filter((id): id is number => id !== undefined);
+    const newStop: Partial<IStop> = {
+        addresName,
+        addres,
+        comunaId,
+        notes,
+        sellId,
+        ratesIds: rateIds.length > 0 ? rateIds : undefined,
+        phone,
+        lat,
+        lng,
+        fragile,
+        devolution,
+        exchange,
+        totalStop
+    }
+    const stop = await create(Stop, newStop);
     if (!stop) {
         res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
         return;
     }
     try {
-        await createNotification({
+        /* await createNotification({
             type: 'admin', sellId: req.body.sellId, title: 'Nueva parada creada',
             message: 'Nueva parada agregada, pendiente de pago',
-        });
+        }); */
 
         res.status(201).json(stop);
     } catch (error) {
@@ -37,7 +73,43 @@ export const createStop = async (req: Request, res: Response) => {
 }
 
 export const updateStop = async (req: Request, res: Response) => {
-    const stop = await update(Stop, { id: req.body.id }, req.body);
+    const {
+        id,
+        addresName,
+        addres,
+        comunaId,
+        notes,
+        sellId,
+        phone,
+        lat,
+        lng,
+        fragile,
+        devolution,
+        exchange,
+        selectedRates,
+    } = req.body;
+    const selectedR: IRate[] = selectedRates || [];
+
+    const totalStop = selectedR.reduce((acc, rate) => acc + Number(rate.price), 0);
+    const rateIds: number[] = selectedR
+        .map(rate => rate.id)
+        .filter((id): id is number => id !== undefined);
+    const updateStop: Partial<IStop> = {
+        addresName,
+        addres,
+        comunaId,
+        notes,
+        sellId,
+        ratesIds: rateIds.length > 0 ? rateIds : [],
+        phone,
+        lat,
+        lng,
+        fragile,
+        devolution,
+        exchange,
+        totalStop
+    }
+    const stop = await Stop.update(updateStop, { where: { id } });
     if (!stop) {
         res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
         return;
@@ -47,12 +119,22 @@ export const updateStop = async (req: Request, res: Response) => {
 
 export const getStopById = async (req: Request, res: Response) => {
     const { id } = req.params;
-    const stop = await byField(Stop, { id: id });
+    const stop = await oneByFieldWithRelations(Stop, { id: id }, [
+        { model: Comuna, attributes: ['name', 'id'] }
+    ]);
     if (!stop) {
         res.status(500).json({ message: 'no fue posible cargar la informacion, revisa la consola' })
         return;
     }
-    res.status(200).json(stop.dataValues);
+    const rates: IRate[] = stop.dataValues.ratesIds
+        ? await Promise.all(
+            stop?.dataValues.ratesIds.map(async (rateId: number) => {
+                const rate = await Rate.findOne({ where: { id: rateId } });
+                return rate?.dataValues as IRate;
+            })
+        )
+        : [];
+    res.status(200).json({ stop: stop.dataValues, rates });
 }
 
 export const disableStop = async (req: Request, res: Response) => {
@@ -68,7 +150,6 @@ export const disableStop = async (req: Request, res: Response) => {
 export const listStops = async (req: Request, res: Response) => {
     const stops = await listWithRelations(Stop, { where: { [Op.or]: [{ status: 'pickUp' }, { status: 'delivery' }] } }, [
         { model: Comuna, attributes: ['name', 'id'] },
-        { model: Rate, attributes: ['id', 'nameService', 'price'] },
         {
             model: Sell, attributes: ['id', 'name', 'email', 'addresPickup', 'lat', 'lng'],
             include: [
@@ -95,7 +176,6 @@ export const listStops = async (req: Request, res: Response) => {
 export const listStopsToMap = async (req: Request, res: Response) => {
     const stops = await listWithRelations(Stop, { where: { [Op.or]: [{ status: 'pickUp' }, { status: 'delivery' }] } }, [
         { model: Comuna, attributes: ['name', 'id'] },
-        { model: Rate, attributes: ['id', 'nameService', 'price'] },
         {
             model: Sell, attributes: ['id', 'name', 'email', 'addresPickup', 'lat', 'lng'],
             include: [
@@ -151,7 +231,6 @@ export const listStopsDelivered = async (req: Request<{}, {}, {}, FilterQuery>, 
             order: [[field2, direction]],
             include: [
                 { model: Comuna, attributes: ['name', 'id'], required: true },
-                { model: Rate, attributes: ['id', 'nameService', 'price'] },
                 {
                     model: Sell, attributes: ['id', 'name', 'email', 'addresPickup'],
                     required: true,
@@ -183,7 +262,6 @@ export const listStopsDelivered = async (req: Request<{}, {}, {}, FilterQuery>, 
 export const listStopsFailed = async (req: Request, res: Response) => {
     const stops = await listWithRelations(Stop, { where: { status: 'failed' } }, [
         { model: Comuna, attributes: ['name', 'id'] },
-        { model: Rate, attributes: ['id', 'nameService', 'price'] },
         {
             model: Sell, attributes: ['id', 'name', 'email', 'addresPickup'],
             include: [
@@ -210,7 +288,6 @@ export const listStopsFailed = async (req: Request, res: Response) => {
 export const listStopsPending = async (req: Request, res: Response) => {
     const stops = await listWithRelations(Stop, { where: { status: 'to_be_paid' } }, [
         { model: Comuna, attributes: ['name', 'id'] },
-        { model: Rate, attributes: ['id', 'nameService', 'price'] },
         {
             model: Sell, attributes: ['id', 'name', 'email', 'addresPickup'],
             include: [
@@ -282,17 +359,39 @@ export const listStopsComunas = async (req: Request, res: Response) => {
 
 export const listStopByUSer = async (req: Request, res: Response) => {
     const { sellId } = req.params;
-    const stops = await byFieldWithRelations(Stop, { sellId: sellId }, [
+
+    const stops = await byFieldWithRelations(Stop, { sellId }, [
         { model: Comuna, attributes: ['name', 'id'] },
-        { model: Rate, attributes: ['id', 'nameService', 'price'] },
         { model: Sell, attributes: ['id', 'name', 'email', 'addresPickup'] }
     ]);
+
     if (!stops) {
-        res.status(500).json({ message: 'Aun no tienes paradas creadas' })
+        res.status(500).json({ message: 'Aún no tienes paradas creadas' });
         return;
     }
-    res.status(201).json(formatResponse(true, stops, 'El listado de tus paradas', false));
-}
+
+    const stps: IStop[] = stops.map(s => s.dataValues);
+
+    const response = await Promise.all(
+        stps.map(async s => {
+            const rates: IRate[] = s.ratesIds
+                ? await Promise.all(
+                    s.ratesIds.map(async (rateId: number) => {
+                        const rate = await Rate.findOne({ where: { id: rateId } });
+                        return rate?.dataValues as IRate;
+                    })
+                )
+                : [];
+
+            return {
+                stop: s,
+                rates
+            };
+        })
+    );
+    res.status(200).json(formatResponse(true, response, 'El listado de tus paradas', false));
+};
+
 
 export const addFromExcel = async (req: Request, res: Response) => {
     try {
@@ -568,8 +667,8 @@ export const reDispatch = async (req: Request, res: Response) => {
 export const returnToShop = async (req: Request, res: Response) => {
     const { stop }: { stop: IStop } = req.body;
     try {
-        const sell = await oneByFieldWithRelations<ISell>(Sell, { id: stop.sellId },[
-            {model: User, attributes: ['firstName', 'id', 'phone'] }
+        const sell = await oneByFieldWithRelations<ISell>(Sell, { id: stop.sellId }, [
+            { model: User, attributes: ['firstName', 'id', 'phone'] }
         ]);
         if (!sell) {
             res.status(400).json({ message: 'No se encontro la venta asociada a la parada' });
@@ -578,7 +677,7 @@ export const returnToShop = async (req: Request, res: Response) => {
         await update(Stop, { id: Number(stop.id) }, {
             status: 'delivery', driverId: null, addres: sell?.addresPickup,
             comunaId: sell.comunaId, lat: sell?.lat, lng: sell?.lng,
-            addresName: `${sell.name}- ${sell.User?.firstName}`, phone: sell.User?.phone, 
+            addresName: `${sell.name}- ${sell.User?.firstName}`, phone: sell.User?.phone,
             notes: 'Devolución a la tienda', updateAt: new Date()
         });
         await update(Failed, { stopId: Number(stop.id) }, { action: 'return_to_shop', updateAt: new Date() });
@@ -587,4 +686,36 @@ export const returnToShop = async (req: Request, res: Response) => {
         res.status(500).json({ message: error });
         console.log(error);
     }
+}
+
+export const chartsDeliveredDay = async (req: Request, res: Response) => {
+    const stops = await list(Stop, {
+        attributes: [
+            [Sequelize.literal(`"deliveryDate"::date`), 'label'],
+            [Sequelize.fn('COUNT', Sequelize.col('id')), 'value'] // Conteo de IDs
+        ],
+        where: { status: 'delivered' },
+        group: [Sequelize.literal(`"deliveryDate"::date`)],
+        raw: true // Devuelve resultados como objetos planos
+    });
+    if (!stops) {
+        res.status(500).json({ message: 'no fue posible guardar, revisa la consola' })
+        return;
+    }
+    const datosLimpios = stops.map(({ label, value }) => ({
+        label: dayjs(label).format('DD-MM-YYYY'), // o 'YYYY-MM-DD', según lo que necesites
+        value
+    }));
+    res.status(200).json(datosLimpios);
+}
+
+export const countDelivered = async (req: Request, res: Response) => {
+    try {
+        const count = await Stop.count({ where: { status: 'delivered' } });
+        res.status(200).json({ count });
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({ message: 'no fue posible cargar los datos, revisa la consola' })
+    }
+
 }

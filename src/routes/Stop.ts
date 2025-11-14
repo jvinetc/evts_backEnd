@@ -3,7 +3,9 @@ import { createStopMiddleware, fromExcel, toExcelBuffer, updateStopMiddleware } 
 import { addFromExcel, asignDriversToStops, createFromExcel, createStop, disableStop, generateTemplate, 
     getPayDetail, getPaysBySell, getStopById, listStopByAdmin, listStopByUSer, listStops, listStopsCharts, 
     listStopsComunas, listStopsDelivered, listStopsPending, listStopsToMap, processPay, updateStop, listStopsFailed,
-    reDispatch, returnToShop} from "../controller/Stop";
+    reDispatch, returnToShop,
+    chartsDeliveredDay,
+    countDelivered} from "../controller/Stop";
 import multer from "multer";
 import { authConfirm } from "../middleware/Auth";
 
@@ -20,6 +22,8 @@ router.get('/downloadTemplate'/* , authConfirm */, generateTemplate);
 router.get('/chart/comuna', listStopsComunas);
 router.post('/asignDriver', authConfirm, asignDriversToStops);
 router.get('/chart', listStopsCharts);
+router.get('/delivered-day-chart', chartsDeliveredDay);
+router.get('/delivered/count', countDelivered);
 router.get('/stop/:id', getStopById);
 router.get('/byAdmin', listStopByAdmin);
 router.get('/pending'/* , authConfirm */, listStopsPending);

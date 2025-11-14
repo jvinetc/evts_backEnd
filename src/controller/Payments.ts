@@ -90,7 +90,6 @@ export const getPays = async (req: Request<{}, {}, {}, FilterQuery>, res: Respon
                 const stops = await list(Stop, {
                     where: { buyOrder: p.dataValues.buy_order }, include: [
                         { model: Comuna, attributes: ['name', 'id'] },
-                        { model: Rate, attributes: ['id', 'nameService', 'price'] },
                         {
                             model: Driver, attributes: ['id', 'userId', 'patente'],
                             include: [

@@ -11,6 +11,7 @@ import { Payment } from "./Payment";
 import { Notification } from "./Notification";
 import { PickUp } from "./PickUp";
 import { Failed } from "./Failed";
+import { RateAddition } from "./RateAddition";
 
 // User ↔ Role
 Role.hasMany(User, { foreignKey: 'roleId' });
@@ -52,8 +53,8 @@ Stop.belongsTo(Driver, { foreignKey: { name: 'driverId', allowNull: true } });
 Comuna.hasMany(Stop, { foreignKey: 'comunaId' });
 Stop.belongsTo(Comuna, { foreignKey: 'comunaId' });
 
-Rate.hasMany(Stop, { foreignKey: 'rateId' });
-Stop.belongsTo(Rate, { foreignKey: 'rateId' });
+/* Rate.hasMany(Stop, { foreignKey: 'rateId' });
+Stop.belongsTo(Rate, { foreignKey: 'rateId' }); */
 
 User.hasMany(Notification, { foreignKey: 'userId' });
 Notification.belongsTo(User, { foreignKey: 'userId' });
@@ -61,9 +62,11 @@ Notification.belongsTo(User, { foreignKey: 'userId' });
 PickUp.belongsTo(Sell, { foreignKey: 'sellId' });
 PickUp.belongsTo(Driver, { foreignKey: 'driverId' });
 PickUp.belongsTo(Stop, { foreignKey: 'stopId' });
+PickUp.belongsTo(User, { foreignKey: 'userId' });
 Sell.hasMany(PickUp, { foreignKey: 'sellId' });
 Driver.hasMany(PickUp, { foreignKey: 'driverId' });
 Stop.hasMany(PickUp, { foreignKey: 'stopId' });
+User.hasMany(PickUp, { foreignKey: 'userId' });
 
 // Failed ↔ Sell, Driver, Stop
 Failed.belongsTo(Sell, { foreignKey: 'sellId' });
@@ -76,6 +79,11 @@ Driver.hasMany(Failed, { foreignKey: 'driverId' });
 Stop.hasMany(Failed, { foreignKey: 'stopId' });
 Comuna.hasMany(Failed, { foreignKey: 'comunaId' });
 
+RateAddition.belongsTo(Rate, { foreignKey: 'rateId' });
+Rate.hasMany(RateAddition, { foreignKey: 'rateId' });
+RateAddition.belongsTo(Comuna, { foreignKey: 'comunaId' });
+Comuna.hasMany(RateAddition, { foreignKey: 'comunaId' });
+
 // 👇 agregar las tablas
 
-export { sequelize, User, Role, Comuna, Sell, Driver, Stop, Rate, Images, Payment, PickUp, Notification, Failed };
+export { sequelize, User, Role, Comuna, Sell, Driver, Stop, Rate, Images, Payment, PickUp, Notification, Failed, RateAddition };
